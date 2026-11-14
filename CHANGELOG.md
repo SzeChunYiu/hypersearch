@@ -11,5 +11,8 @@ Development upgrade from the original 0.1.0 foundation; no stable 0.1.0 release 
 - Commit-pinned CI actions and administrative ownership routing.
 - Consumer adoption contract and twin-system improvement protocol.
 - Bounded exact multiwise Davenport certificate verification; not a frontier-scale solver.
+- Validate bundled demo requests before persistent state or attempt acquisition.
+  Existing failed records remain intact; no task schema or verifier change.
+  Rollback is an explicit source-pin return, not database history deletion.
 
 Breaking schema or evaluator changes require explicit migration notes and consumer revalidation before release.

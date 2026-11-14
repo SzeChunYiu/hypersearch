@@ -19,6 +19,23 @@ The kernel owns admission, frozen specifications, bounded attempts and result in
 
 The initial implementation includes a single-host SQLite task store and one built-in mathematics adapter. The CLI recomputes verification itself. The generic store only records JSON; it does not certify submitted evidence or authenticate worker names. No plugin-supplied receipt is automatically trusted. There is no network dispatcher, arbitrary-code runner, LLM provider integration, formal prover or automated publication service yet.
 
+## Admission before persistence
+
+The bundled CLI validates the task schema and adapter input bounds before
+opening the task store. Invalid demo requests create no database, submit no
+task, and acquire no earlier pending work. The adapter reuses the same pure
+input validation at search time; leased specifications are revalidated before
+execution. The generic store remains domain-neutral. This is cooperative CLI
+admission, not authentication of arbitrary database writers. Once valid work
+is acquired, execution failures remain charged and recorded.
+
+Primary documentation consulted 2026-11-14:
+[Python argparse type conversion](https://docs.python.org/3/library/argparse.html#type)
+and [sqlite3 connection/transaction behavior](https://docs.python.org/3/library/sqlite3.html).
+Integer parsing does not enforce adapter bounds; opening a SQLite connection
+may create a file. Therefore admission precedes store construction, rather than
+relying on execution failure or transaction rollback to reject bad requests.
+
 ## Ownership and recovery
 
 One local SQLite authority serializes claims. Reclaimed tasks receive a higher fencing generation; result acceptance checks current ownership, generation and expiry. An attempt is charged when granted, including failures or lost replies. This bounds attempts, not dollars, tokens, CPU time or external side effects. Next stages must reserve multidimensional budgets and reconcile uncertain external effects before retrying.

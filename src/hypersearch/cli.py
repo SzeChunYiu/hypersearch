@@ -8,20 +8,26 @@ import sqlite3
 import sys
 
 from . import __version__
-from .math_adapter import search, verify_certificate
+from .math_adapter import search, validate_search_inputs, verify_certificate
 from .multiwise import verify_certificate as verify_multiwise
 from .store import Store, canonical_json
 
 VERIFIER = "hypersearch.zero-sum-subsets/v1"
 
 
-def execute_spec(spec):
-    """Execute only the bundled, versioned adapter on a closed specification."""
+def validate_spec(spec):
+    """Admit a bundled task before opening a store or charging an attempt."""
     if (type(spec) is not dict or set(spec) != {"schema", "domain", "moduli", "max_steps", "verifier"}
             or spec["schema"] != "hypersearch.task/v1"
             or spec["domain"] != "finite-abelian-zero-sum"
             or spec["verifier"] != VERIFIER):
         raise ValueError("unsupported frozen specification or verifier")
+    validate_search_inputs(spec["moduli"], spec["max_steps"])
+
+
+def execute_spec(spec):
+    """Revalidate leased work, then execute only the bundled adapter."""
+    validate_spec(spec)
     certificate = search(spec["moduli"], max_steps=spec["max_steps"])
     receipt = verify_certificate(certificate, expected_moduli=spec["moduli"])
     if not receipt["verified"]:
@@ -67,12 +73,14 @@ def main(argv=None):
                 receipt = verify_certificate(certificate, expected_moduli=args.moduli)
             print(json.dumps(receipt, indent=2))
             return 0 if receipt["verified"] else 1
+        if args.command == "demo":
+            spec = {"schema": "hypersearch.task/v1", "domain": "finite-abelian-zero-sum",
+                    "moduli": args.moduli, "max_steps": args.max_steps, "verifier": VERIFIER}
+            validate_spec(spec)
         store = Store(args.db, max_attempts=args.budget)
         if args.command == "status":
             print(json.dumps(store.snapshot(), indent=2))
             return 0
-        spec = {"schema": "hypersearch.task/v1", "domain": "finite-abelian-zero-sum",
-                "moduli": args.moduli, "max_steps": args.max_steps, "verifier": VERIFIER}
         task_id = "math-" + hashlib.sha256(canonical_json(spec).encode()).hexdigest()
         store.submit(task_id, spec)
         # Acquire may select earlier pending work; always execute its frozen spec.
