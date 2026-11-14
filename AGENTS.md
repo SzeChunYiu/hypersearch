@@ -13,3 +13,7 @@ Read README.md, docs/ARCHITECTURE.md, docs/ROADMAP.md and docs/STATUS.md.
 - Default worker integration is existing authorized native agent sessions. Never extract credentials or silently add paid provider calls. Unsupported automatic launch stays explicitly unavailable.
 - No self-merging scientific promotion; no claims of new mathematics without exact statements, prior-art review and appropriate independent proof/certificate review.
 - Update docs/STATUS.md with observed checks and honest blockers. Do not close a roadmap issue on documentation alone.
+
+- Read docs/governance/INDEX.md. Register every tracked material in governance/materials.json; run the governance gate. The inventory is administrative ownership, never claim authority.
+- Keep consumer commits frozen. Adopt a new harness through a dedicated pin PR with positive/refusal tests and rollback evidence. An active study retains its original evaluator.
+- Shared improvements follow docs/governance/TWIN_DEVELOPMENT.md. Keep private counterpart mappings private; record public contract IDs and synthetic regression fixtures here.

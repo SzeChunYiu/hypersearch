@@ -14,7 +14,7 @@ Python 3.11+; runtime uses only the standard library. No API key or private repo
 git clone https://github.com/SzeChunYiu/hypersearch.git
 cd hypersearch
 # Until the foundation PR is merged:
-git switch feat/research-foundation
+git switch tooling/governed-adoption
 PYTHONPATH=src python -m unittest discover -s tests -v
 PYTHONPATH=src python -m hypersearch demo --db /tmp/hypersearch.sqlite
 PYTHONPATH=src python -m hypersearch status --db /tmp/hypersearch.sqlite
@@ -62,3 +62,15 @@ The public core will remain usable without private infrastructure. Private resea
 Start with [architecture](docs/ARCHITECTURE.md), [roadmap](docs/ROADMAP.md), [implementation status](docs/STATUS.md), [literature review](docs/LITERATURE.md), and [private-consumer boundary](docs/PRIVATE_INTEGRATION.md). Contribution rules are in [AGENTS.md](AGENTS.md) and [CONTRIBUTING.md](CONTRIBUTING.md).
 
 MIT licensed. External projects retain their own licenses; references do not imply code reuse or endorsement.
+
+## Governed adoption (0.2.0 development)
+
+Run `PYTHONPATH=src python -m hypersearch.governance .` to check exact tracked-material ownership, lifecycle, version consistency and immutable CI action references. See the [management index](docs/governance/INDEX.md), [consumer contract](docs/governance/ADOPTION.md) and [twin development protocol](docs/governance/TWIN_DEVELOPMENT.md). Development pins remain experimental until consumer commissioning and independent release review.
+
+The bounded multiwise verifier checks supplied witnesses for `D_k`, preserving disjointness and multiplicity:
+
+```sh
+PYTHONPATH=src python -m hypersearch verify-multiwise examples/multiwise-c2-k2.json --moduli 2 --k 2
+```
+
+This three-term sequence has at most one disjoint zero-sum subsequence, establishing only `D_2(C2) >= 4`. The verifier accepts ambient groups of order up to 1,000,000 but sequences of at most 16 terms; it is not the solver for the full frontier programme. A consumer's claim registry and promotion HOLD remain authoritative.

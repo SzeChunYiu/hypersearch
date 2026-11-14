@@ -1,0 +1,6 @@
+{
+  "schema": "hypersearch.multiwise-certificate/v1",
+  "moduli": [2],
+  "k": 2,
+  "sequence": [[1], [1], [1]]
+}
