@@ -5,7 +5,7 @@
 - Foundation commit f7254533a9310060bde7f045e7ba89b12d520073: 18 tests and demo passed in GitHub Actions on Python 3.11/3.12/3.13.
 - Governed-adoption development: 33 tests passed locally on Python 3.12.14, including inventory/version checks, mutable-action refusal, exact multiwise verification and task binding.
 - Multiwise C2 known-answer example verifies only D_2(C2) >= 4. An assignment-based tiny oracle cross-checks the subset-packing algorithm. No formal proof, independent-team replication or novel theorem is claimed.
-- Current management version is 0.2.0 development. Exact source pins distinguish this from the original 0.1.0 foundation.
+- Current management version is 0.3.0 development. Exact source pins distinguish this from the original 0.1.0 foundation.
 - Public implementation contains no private research material. Consumer integration is a separate, pinned reviewable change; consumer CI/commissioning evidence belongs with that change.
 
 ## Admission correction — local qualification
@@ -20,9 +20,21 @@
   state after rejection. Admitted execution failures still consume an attempt
   and retain their failure record; these are not refunded or erased.
 - This is a software admission fix, not a verifier-semantic or schema change.
-  Development version remains 0.2.0; the exact commit identifies the changed
+  At that correction, development version remained 0.2.0; the exact commit identifies the changed
   instrument. Existing consumers and in-flight studies retain their old pins.
   Independent review and actual-consumer adoption are separate gates.
+
+## Frozen supplied-certificate route — implementation under review
+
+The 0.3.0 source adds closed bundles, exact-task grants, bounded verifier children,
+full receipts and external-digest replay. On Python 3.12.14, all 57 tests,
+governance validation, fresh README demo and multiwise example passed. Direct
+CLI-file execution runs all eight CLI tests. Only public synthetic known-answer/
+refusal fixtures were used. Hostile review reproduced manifest bool/integer
+aliasing, SQLite sidecar/input collision, source hardlink mutation and mixed-queue
+consumption; regression tests now refuse each before the corresponding effect. Consumer adoption, independent release qualification
+and scientific admission remain separate. See docs/STUDIES.md and
+STUDY_CONTRACT.md. No historical scripts or private material are included.
 
 ## Readiness boundaries
 

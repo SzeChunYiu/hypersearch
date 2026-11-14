@@ -31,8 +31,8 @@ def _k(value):
     return value
 
 
-def verify_certificate(certificate, *, expected_moduli=None, expected_k=None):
-    """Recompute the exact zero-sum packing number of a <=16-term sequence.
+def validate_certificate(certificate, *, expected_moduli=None, expected_k=None):
+    """Admit schema, bounds and task binding without computing packings.
 
     Closed input fields deliberately contain no claimed verdict. The task runner
     must bind its frozen group and k using expected_moduli and expected_k. Digest
@@ -58,6 +58,13 @@ def verify_certificate(certificate, *, expected_moduli=None, expected_k=None):
         if any(type(x) is not int or not 0 <= x < n for x, n in zip(term, ns)):
             raise ValueError("coordinates must be canonical integers")
 
+    return ns, k, sequence
+
+
+def verify_certificate(certificate, *, expected_moduli=None, expected_k=None):
+    """Recompute a supplied witness after pure schema and bound admission."""
+    ns, k, sequence = validate_certificate(
+        certificate, expected_moduli=expected_moduli, expected_k=expected_k)
     size = 1 << len(sequence)
     zero = (0,) * len(ns)
     sums = [zero] * size

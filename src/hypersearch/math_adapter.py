@@ -87,8 +87,8 @@ def search(moduli, max_steps=10_000):
     return certificate
 
 
-def verify_certificate(certificate, *, expected_moduli=None):
-    """Check a certificate independently; malformed inputs raise ValueError.
+def validate_certificate(certificate, *, expected_moduli=None):
+    """Admit schema, bounds, task binding and digest without subset checking.
 
     The digest detects accidental modification, not malicious authorship. The
     evidence rests on recomputation. Search telemetry is never proof evidence.
@@ -131,6 +131,12 @@ def verify_certificate(certificate, *, expected_moduli=None):
     if type(certificate["sha256"]) is not str or certificate["sha256"] != _digest(certificate):
         raise ValueError("certificate digest mismatch")
 
+    return ns, sequence
+
+
+def verify_certificate(certificate, *, expected_moduli=None):
+    """Recompute a supplied ordinary witness after pure schema admission."""
+    ns, sequence = validate_certificate(certificate, expected_moduli=expected_moduli)
     # Independent brute-force verification includes multiplicities by indexing
     # positions. The empty subset is intentionally excluded.
     checked = 0

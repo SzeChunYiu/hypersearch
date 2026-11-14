@@ -114,8 +114,10 @@ class Store:
             db.execute("INSERT INTO events(kind,task_id,fence,time) VALUES('submitted',?,0,?)", (task_id, self._now()))
         return digest
 
-    def acquire(self, worker, lease_seconds=60):
+    def acquire(self, worker, lease_seconds=60, *, task_id=None):
         _name(worker)
+        if task_id is not None:
+            _name(task_id)
         if isinstance(lease_seconds, bool) or not isinstance(lease_seconds, (int, float)) or not math.isfinite(lease_seconds) or not 0 < lease_seconds <= 86400:
             raise ValueError("lease_seconds must be finite and in (0, 86400]")
         with self._transaction() as db:
@@ -123,7 +125,9 @@ class Store:
             budget = db.execute("SELECT maximum,spent FROM budget WHERE id=1").fetchone()
             if budget["spent"] >= budget["maximum"]:
                 return None
-            row = db.execute("SELECT * FROM tasks WHERE state='pending' OR (state='running' AND expires<=?) ORDER BY id LIMIT 1", (now,)).fetchone()
+            row = db.execute(
+                "SELECT * FROM tasks WHERE (state='pending' OR (state='running' AND expires<=?)) "
+                "AND (? IS NULL OR id=?) ORDER BY id LIMIT 1", (now, task_id, task_id)).fetchone()
             if row is None:
                 return None
             fence, expires = row["fence"] + 1, now + lease_seconds

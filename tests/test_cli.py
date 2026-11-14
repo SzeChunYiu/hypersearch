@@ -67,6 +67,20 @@ class CliTests(unittest.TestCase):
             self.assertEqual([event["kind"] for event in state["events"]],
                              ["submitted", "acquired", "completed"])
 
+    def test_demo_cannot_consume_pending_foreign_task(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            db = Path(tmp) / "mixed.sqlite"
+            store = Store(db)
+            store.submit("a-other-contract", {"schema": "foreign-task/v1"})
+            with contextlib.redirect_stdout(io.StringIO()), contextlib.redirect_stderr(io.StringIO()):
+                self.assertEqual(main(["demo", "--db", str(db)]), 0)
+                self.assertEqual(main(["demo", "--db", str(db)]), 0)
+            state = store.snapshot()
+            self.assertEqual(state["tasks"][0]["id"], "a-other-contract")
+            self.assertEqual(state["tasks"][0]["state"], "pending")
+            self.assertEqual(state["budget"]["spent"], 1)
+            self.assertEqual(len(state["results"]), 1)
+
     def test_wrong_task_certificate_rejected(self):
         spec = {"schema": "hypersearch.task/v1", "domain": "finite-abelian-zero-sum",
                 "moduli": [2, 2, 2], "max_steps": 100, "verifier": VERIFIER}
