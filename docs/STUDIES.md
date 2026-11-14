@@ -68,8 +68,10 @@ PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=src python -m hypersearch replay-study \
 The expected digest comes from a separately committed manifest or trusted Store
 record, never the receipt's own assertion. This is a trusted hash commitment,
 not a signature/remote attestation. Replay freezes the original bundle plus parent
-digest and replay ID in a separately hashed/charged task. Identical replay ID is
-idempotent. Compare deterministic outcomes, excluding timings/runtime metadata.
+digest and replay ID in a separately charged task. Replay ID is unique within
+one database and atomically bound to the entire wrapper. Same ID/same wrapper is
+idempotent; changed parent/bundle conflicts before grant. A different ID is an
+independent attempt. Receipt execution_sha256 binds the complete wrapper. Compare deterministic outcomes, excluding timings/runtime metadata.
 A second agent/host is not external mathematical refereeing. Use a separate replay
 export directory because input/output overlap is prohibited.
 

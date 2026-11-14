@@ -10,6 +10,8 @@ No stable release has been commissioned. Entries describe development work, not 
 - Extract pure admission without changing verifier semantics/IDs/bounds.
 - Bind source/input pins, external receipt commitments and immutable export
   recovery. Invalid requests never grant work; failed attempts remain charged.
+- Bind replay IDs atomically within the database; changed lineage cannot reuse
+  an ID to obtain a fresh grant. Receipts bind the complete wrapper separately.
 - Additive APIv1 development contract, not stable release or consumer adoption.
   New pins require conformance/rollback; historical instruments remain frozen.
 

@@ -7,6 +7,7 @@ import tempfile
 import unittest
 
 from hypersearch.study_json import encode
+from hypersearch.store import Store
 from study_fixture import make
 
 
@@ -31,7 +32,16 @@ class StudyCliTests(unittest.TestCase):
                              "--expected-receipt-sha256", first["receipt_sha256"], "--replay-id", "independent-replay",
                              "--consumer-root", consumer, "--db", root / "tasks.sqlite", "--export", root / "replay")
             self.assertEqual(result.returncode, 0, result.stderr)
-            self.assertTrue(json.loads(result.stdout)["replay_matches_parent"])
+            replay = json.loads(result.stdout)
+            self.assertTrue(replay["replay_matches_parent"])
+            before = Store(root / "tasks.sqlite", max_attempts=5).snapshot()
+            changed = command(core, "replay-study", "--receipt", replay["receipt_path"],
+                              "--expected-receipt-sha256", replay["receipt_sha256"], "--replay-id", "independent-replay",
+                              "--consumer-root", consumer, "--db", root / "tasks.sqlite", "--export", root / "changed-lineage")
+            self.assertEqual(changed.returncode, 2)
+            self.assertIn("immutable", changed.stderr)
+            self.assertEqual(Store(root / "tasks.sqlite", max_attempts=5).snapshot(), before)
+            self.assertFalse((root / "changed-lineage").exists())
             refused = command(core, "replay-study", "--receipt", first["receipt_path"],
                               "--expected-receipt-sha256", "0" * 64, "--replay-id", "tampered",
                               "--consumer-root", consumer, "--db", root / "refused.sqlite", "--export", root / "refused")

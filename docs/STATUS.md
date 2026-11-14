@@ -27,12 +27,15 @@
 ## Frozen supplied-certificate route — implementation under review
 
 The 0.3.0 source adds closed bundles, exact-task grants, bounded verifier children,
-full receipts and external-digest replay. On Python 3.12.14, all 57 tests,
+full receipts and external-digest replay. On Python 3.12.14, all 61 tests,
 governance validation, fresh README demo and multiwise example passed. Direct
 CLI-file execution runs all eight CLI tests. Only public synthetic known-answer/
 refusal fixtures were used. Hostile review reproduced manifest bool/integer
 aliasing, SQLite sidecar/input collision, source hardlink mutation and mixed-queue
-consumption; regression tests now refuse each before the corresponding effect. Consumer adoption, independent release qualification
+consumption; regression tests now refuse each before the corresponding effect.
+A later valid-parent replay-ID substitution was also reproduced: DB-scoped replay
+keys now atomically bind one full wrapper. Changed-parent, changed-bundle and
+concurrent-conflict regressions pass without additional grants on the losing path. Consumer adoption, independent release qualification
 and scientific admission remain separate. See docs/STUDIES.md and
 STUDY_CONTRACT.md. No historical scripts or private material are included.
 

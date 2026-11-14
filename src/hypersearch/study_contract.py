@@ -101,3 +101,13 @@ def validate_wrapper(value):
     if len(encode(value)) > MAX_BUNDLE_BYTES:
         raise ValueError("execution wrapper exceeds admitted byte bound")
     return value
+
+
+def execution_identity(value):
+    """Return DB task key and immutable full-wrapper identity separately."""
+    validate_wrapper(value)
+    specification = digest(encode(value))
+    if value["kind"] == "original":
+        return "study-" + specification, specification
+    key = {"namespace": "hypersearch.replay-id/v1", "replay_id": value["replay_id"]}
+    return "study-replay-" + digest(encode(key)), specification

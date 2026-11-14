@@ -3,18 +3,19 @@ import os
 from pathlib import Path
 import tempfile
 
-from .study_contract import validate_wrapper
+from .study_contract import execution_identity, validate_wrapper
 from .study_json import MAX_RECEIPT_BYTES, digest, encode, fields, integer, parse, sha, text
 from .study_outcomes import outcome
 
 
 def validate_receipt(value):
-    fields(value, "schema execution task_id outcome outcome_sha256 attempt runtime diagnostics replay_matches_parent")
+    fields(value, "schema execution execution_sha256 task_id outcome outcome_sha256 attempt runtime diagnostics replay_matches_parent")
     if value["schema"] != "hypersearch.study-receipt/v1":
         raise ValueError("unsupported receipt schema")
     execution = validate_wrapper(value["execution"])
-    if value["task_id"] != "study-" + digest(encode(execution)):
-        raise ValueError("receipt task identity mismatch")
+    task_id, specification = execution_identity(execution)
+    if value["task_id"] != task_id or value["execution_sha256"] != specification:
+        raise ValueError("receipt task or full-wrapper identity mismatch")
     outcome(value["outcome"], execution["bundle"])
     if value["outcome_sha256"] != digest(encode(value["outcome"])):
         raise ValueError("receipt outcome digest mismatch")

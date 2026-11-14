@@ -8,7 +8,7 @@ import tempfile
 import time
 
 from .store import Store
-from .study_contract import validate_wrapper, wrapper
+from .study_contract import execution_identity, validate_wrapper, wrapper
 from .study_json import MAX_BUNDLE_BYTES, MAX_RECEIPT_BYTES, digest, encode, parse
 from .study_outcomes import outcome, verification
 from .study_paths import output_paths, verify_sources
@@ -52,11 +52,13 @@ def execute(execution, *, consumer_root, database, export, inputs=(), parent_rec
     core, consumer = verify_sources(bundle, CORE_ROOT, consumer_root)
     database, export = output_paths(database, export, (core, consumer), inputs)
     store = Store(database, max_attempts=bundle["limits"]["db_max_attempts"])
-    task_id = "study-" + digest(encode(execution))
+    task_id, specification = execution_identity(execution)
+    # Stable replay ID binds once, atomically, before any grant. Changing its
+    # parent or bundle conflicts with Store.submit's immutable specification.
     store.submit(task_id, execution)
     snapshot = store.snapshot()
     task = next(t for t in snapshot["tasks"] if t["id"] == task_id)
-    if task["digest"] != digest(encode(execution)) or task["spec"].encode() != encode(execution):
+    if task["digest"] != specification or task["spec"].encode() != encode(execution):
         raise ValueError("stored task identity mismatch")
     existing = next((r for r in snapshot["results"] if r["task_id"] == task_id), None)
     if task["state"] == "completed" and existing is None:
@@ -86,7 +88,7 @@ def execute(execution, *, consumer_root, database, export, inputs=(), parent_rec
         result = {"status": "EXECUTION_FAILED", "verification": None}
         diagnostics = str(error)[:4096]
     receipt = {"schema": "hypersearch.study-receipt/v1", "execution": execution,
-               "task_id": task_id, "outcome": result, "outcome_sha256": digest(encode(result)),
+               "execution_sha256": specification, "task_id": task_id, "outcome": result, "outcome_sha256": digest(encode(result)),
                "attempt": {"worker": lease.worker, "fence": lease.fence},
                "runtime": {"python": platform.python_version(), "implementation": platform.python_implementation(),
                            "core_commit": bundle["instrument"]["commit"],

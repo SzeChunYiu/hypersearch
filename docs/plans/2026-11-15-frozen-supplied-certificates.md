@@ -75,9 +75,13 @@ stays consumer-owned; core records these references without certifying them.
 
 ## Execution, receipts and restart
 
-Task ID = SHA256 of the entire closed execution wrapper: `schema`, `kind`,
-`bundle`, `parent_receipt_sha256`, `replay_id`. Original runs require null parent
-and replay ID; replay requires a trusted parent digest and nonempty replay ID.
+The full closed wrapper (`schema`, `kind`, `bundle`, `parent_receipt_sha256`,
+`replay_id`) always has an immutable SHA256 spec identity, bound in the receipt.
+Original task keys use that identity. Replay task keys instead hash the versioned
+DB-scoped replay-ID namespace. Store.submit atomically binds that key to one full
+wrapper: same ID/same wrapper is idempotent; changed parent/bundle conflicts.
+Original runs require null parent/replay ID; replay requires trusted parent digest
+and nonempty unique replay ID.
 Use existing sorted-key compact JSON only for the closed envelope; explicitly
 name this encoding and do not claim RFC8785/JCS compliance. Raw artifact hashes
 always identify original bytes. CLI dispatch is a fixed map to trusted bundled

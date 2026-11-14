@@ -45,14 +45,20 @@ Group/k/verifier cannot override the hashed manifest.
 
 Fields: schema, kind, bundle, parent_receipt_sha256, replay_id.
 Original kind requires null parent/replay ID. Replay requires trusted parent
-SHA256 and nonempty ID. Task ID = study- plus SHA256 of the complete encoded
-wrapper, frozen in the existing Store.
+SHA256 and nonempty ID. Original task ID is study- plus SHA256 of the complete
+encoded wrapper. Replay task ID is study-replay- plus SHA256 of the encoded object
+{"namespace":"hypersearch.replay-id/v1","replay_id":ID}. The replay ID is unique
+within its database. Store.submit atomically binds this key to the complete frozen
+wrapper: identical requests are idempotent; changed parent/bundle is a conflict
+before grants, including concurrent requests. A different ID is an independent
+attempt identity. The full wrapper SHA256 remains the immutable Store spec digest.
 
 ## hypersearch.study-receipt/v1
 
-Fields: schema, execution (complete wrapper), task_id, outcome, outcome_sha256,
+Fields: schema, execution (complete wrapper), execution_sha256, task_id, outcome, outcome_sha256,
 attempt, runtime, diagnostics, replay_matches_parent. No self-digest exists:
-Store/export identity hashes the full receipt bytes.
+Store/export identity hashes the full receipt bytes. execution_sha256 binds the
+complete wrapper independently of the stable replay task key.
 Attempt: worker, fence. Runtime: python, implementation, core_commit, elapsed_ms
 (integer). Diagnostics are bounded text. Replay comparison is boolean, original null.
 

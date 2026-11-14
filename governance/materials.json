@@ -294,6 +294,12 @@
       "owner": "quality-maintainers",
       "role": "test",
       "lifecycle": "active"
+    },
+    {
+      "path": "tests/test_study_replay.py",
+      "owner": "quality-maintainers",
+      "role": "test",
+      "lifecycle": "active"
     }
   ]
 }
