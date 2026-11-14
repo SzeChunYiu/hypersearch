@@ -9,6 +9,7 @@ import sys
 
 from . import __version__
 from .math_adapter import search, verify_certificate
+from .multiwise import verify_certificate as verify_multiwise
 from .store import Store, canonical_json
 
 VERIFIER = "hypersearch.zero-sum-subsets/v1"
@@ -45,16 +46,25 @@ def main(argv=None):
     verify = sub.add_parser("verify", help="recheck a JSON certificate against an explicit group")
     verify.add_argument("certificate")
     verify.add_argument("--moduli", nargs="+", type=int, required=True)
+    multi = sub.add_parser("verify-multiwise", help="check a bounded D_k lower-bound witness")
+    multi.add_argument("certificate")
+    multi.add_argument("--moduli", nargs="+", type=int, required=True)
+    multi.add_argument("--k", type=int, required=True)
     status = sub.add_parser("status", help="inspect raw queue state (not certification)")
     status.add_argument("--db", required=True)
     status.add_argument("--budget", type=int, default=100)
     args = parser.parse_args(argv)
     try:
-        if args.command == "verify":
+        if args.command in ("verify", "verify-multiwise"):
             path = Path(args.certificate)
             if path.stat().st_size > 65536:
                 raise ValueError("certificate exceeds 64 KiB")
-            receipt = verify_certificate(json.loads(path.read_text()), expected_moduli=args.moduli)
+            certificate = json.loads(path.read_text())
+            if args.command == "verify-multiwise":
+                receipt = verify_multiwise(certificate, expected_moduli=args.moduli, expected_k=args.k)
+                receipt["verifier"] = "hypersearch.multiwise-subsets/v1"
+            else:
+                receipt = verify_certificate(certificate, expected_moduli=args.moduli)
             print(json.dumps(receipt, indent=2))
             return 0 if receipt["verified"] else 1
         store = Store(args.db, max_attempts=args.budget)

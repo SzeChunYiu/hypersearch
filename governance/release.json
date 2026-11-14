@@ -1,0 +1,17 @@
+{
+  "schema": "hypersearch.release/v1",
+  "version": "0.2.0",
+  "api": "hypersearch.api/v1",
+  "status": "development",
+  "schemas": [
+    "hypersearch.task/v1",
+    "hypersearch.zero-sum-witness/v1",
+    "hypersearch.materials/v1",
+    "hypersearch.release/v1",
+    "hypersearch.multiwise-certificate/v1"
+  ],
+  "verifiers": [
+    "hypersearch.zero-sum-subsets/v1",
+    "hypersearch.multiwise-subsets/v1"
+  ]
+}

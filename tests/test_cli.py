@@ -50,3 +50,17 @@ class CliTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+class MultiwiseCliTests(unittest.TestCase):
+    def test_multwise_cli_bindings(self):
+        cert = {"schema": "hypersearch.multiwise-certificate/v1", "moduli": [2], "k": 2,
+                "sequence": [[1], [1], [1]]}
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "certificate.json"
+            path.write_text(json.dumps(cert))
+            output = io.StringIO()
+            with contextlib.redirect_stdout(output):
+                self.assertEqual(main(["verify-multiwise", str(path), "--moduli", "2", "--k", "2"]), 0)
+            self.assertEqual(json.loads(output.getvalue())["lower_bound"], 4)
+            with contextlib.redirect_stderr(io.StringIO()):
+                self.assertEqual(main(["verify-multiwise", str(path), "--moduli", "2", "--k", "3"]), 2)
