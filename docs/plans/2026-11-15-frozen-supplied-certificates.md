@@ -1,6 +1,13 @@
-# Frozen supplied-certificate execution — proposed design
+# Frozen supplied-certificate execution — historical design
 
-Design only; no study admission or mathematical execution is authorized by this document.
+This record began as the pre-implementation design. The bounded route was then
+implemented and qualified at `18310cdef2167885cdb3c6ea5d73b1b1cc84f5c9`:
+61 tests and governance passed, followed by nine independently executed hostile
+controls. See [current qualification/status](../STATUS.md),
+[operation](../STUDIES.md) and [implemented schemas](../STUDY_CONTRACT.md).
+The alternatives and proposed interfaces below preserve the original decisions;
+current consumer interfaces belong to their owning repositories. This design
+record does not authorize research admission or mathematical promotion.
 Scope: bounded ordinary-D and multiwise supplied certificates, never frontier search,
 upper bounds, equality, novelty, manuscript acceptance or formal proof.
 
@@ -139,12 +146,11 @@ record contributor lineage; another agent is not an external mathematical refere
 
 ## Remaining gates and explicit non-goals
 
-This route is unimplemented. Merge/review and verify current migration/adoption
-and public admission fixes first. Add schema/release manifest and material
-inventory entries in the implementation PR; use a new development version for
-the new public contract. Complete independent software review and consumer
-qualification before admitting even the first research study. Test fixtures are
-software conformance only. The experiment package remains unpromoted; consumer
+The design-stage implementation gate has been satisfied by the development
+0.3.0 source, schema/release manifest and material inventory. The software checks
+above are qualification evidence, not consumer adoption. Review and integrate the
+core change, then independently qualify each exact consumer pin before admitting
+the first research study. Test fixtures are software conformance only. The experiment package remains unpromoted; consumer
 claim authority, mathematical review/novelty requirements and HOLD persist.
 Length <=16 and existing group/k bounds remain. No scalable frontier coverage,
 historical-script runner, external workers, generated code, provider calls,
