@@ -5,6 +5,7 @@ import json
 from pathlib import Path
 import platform
 import sqlite3
+import subprocess
 import sys
 
 from . import __version__
@@ -59,8 +60,22 @@ def main(argv=None):
     status = sub.add_parser("status", help="inspect raw queue state (not certification)")
     status.add_argument("--db", required=True)
     status.add_argument("--budget", type=int, default=100)
+    for name in ("run-study", "replay-study"):
+        study = sub.add_parser(name, help="execute a frozen bounded supplied-certificate task")
+        study.add_argument("--consumer-root", required=True)
+        study.add_argument("--db", required=True)
+        study.add_argument("--export", required=True)
+        if name == "run-study":
+            study.add_argument("--bundle", required=True)
+        else:
+            study.add_argument("--receipt", required=True)
+            study.add_argument("--expected-receipt-sha256", required=True)
+            study.add_argument("--replay-id", required=True)
     args = parser.parse_args(argv)
     try:
+        if args.command in ("run-study", "replay-study"):
+            from .study import main as study_main
+            return study_main(args)
         if args.command in ("verify", "verify-multiwise"):
             path = Path(args.certificate)
             if path.stat().st_size > 65536:
@@ -83,8 +98,8 @@ def main(argv=None):
             return 0
         task_id = "math-" + hashlib.sha256(canonical_json(spec).encode()).hexdigest()
         store.submit(task_id, spec)
-        # Acquire may select earlier pending work; always execute its frozen spec.
-        lease = store.acquire("local-bundled-worker", lease_seconds=300)
+        # A bounded CLI request never grants work belonging to another contract.
+        lease = store.acquire("local-bundled-worker", lease_seconds=300, task_id=task_id)
         if lease is None:
             print(json.dumps({"execution": "not_started", "reason": "no eligible task or attempt budget exhausted", "task_id": task_id}))
             return 0
@@ -97,6 +112,6 @@ def main(argv=None):
         digest = store.complete(lease, result)
         print(json.dumps({"task_id": lease.task_id, "result_sha256": digest, **result}, indent=2))
         return 0
-    except (ValueError, OSError, sqlite3.Error, RecursionError) as error:
+    except (ValueError, TypeError, OSError, sqlite3.Error, subprocess.SubprocessError, RecursionError) as error:
         print(f"hypersearch: {error}", file=sys.stderr)
         return 2

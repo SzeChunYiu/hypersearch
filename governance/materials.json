@@ -92,6 +92,18 @@
       "lifecycle": "active"
     },
     {
+      "path": "docs/STUDIES.md",
+      "owner": "documentation-maintainers",
+      "role": "documentation",
+      "lifecycle": "active"
+    },
+    {
+      "path": "docs/STUDY_CONTRACT.md",
+      "owner": "documentation-maintainers",
+      "role": "documentation",
+      "lifecycle": "active"
+    },
+    {
       "path": "docs/governance/ADOPTION.md",
       "owner": "documentation-maintainers",
       "role": "documentation",
@@ -111,6 +123,12 @@
     },
     {
       "path": "docs/governance/TWIN_DEVELOPMENT.md",
+      "owner": "documentation-maintainers",
+      "role": "documentation",
+      "lifecycle": "active"
+    },
+    {
+      "path": "docs/plans/2026-11-15-frozen-supplied-certificates.md",
       "owner": "documentation-maintainers",
       "role": "documentation",
       "lifecycle": "active"
@@ -182,6 +200,54 @@
       "lifecycle": "active"
     },
     {
+      "path": "src/hypersearch/study.py",
+      "owner": "core-maintainers",
+      "role": "code",
+      "lifecycle": "active"
+    },
+    {
+      "path": "src/hypersearch/study_contract.py",
+      "owner": "core-maintainers",
+      "role": "code",
+      "lifecycle": "active"
+    },
+    {
+      "path": "src/hypersearch/study_json.py",
+      "owner": "core-maintainers",
+      "role": "code",
+      "lifecycle": "active"
+    },
+    {
+      "path": "src/hypersearch/study_outcomes.py",
+      "owner": "core-maintainers",
+      "role": "code",
+      "lifecycle": "active"
+    },
+    {
+      "path": "src/hypersearch/study_paths.py",
+      "owner": "core-maintainers",
+      "role": "code",
+      "lifecycle": "active"
+    },
+    {
+      "path": "src/hypersearch/study_receipts.py",
+      "owner": "core-maintainers",
+      "role": "code",
+      "lifecycle": "active"
+    },
+    {
+      "path": "src/hypersearch/study_worker.py",
+      "owner": "core-maintainers",
+      "role": "code",
+      "lifecycle": "active"
+    },
+    {
+      "path": "tests/study_fixture.py",
+      "owner": "quality-maintainers",
+      "role": "test",
+      "lifecycle": "active"
+    },
+    {
       "path": "tests/test_cli.py",
       "owner": "quality-maintainers",
       "role": "test",
@@ -207,6 +273,30 @@
     },
     {
       "path": "tests/test_store.py",
+      "owner": "quality-maintainers",
+      "role": "test",
+      "lifecycle": "active"
+    },
+    {
+      "path": "tests/test_study_cli.py",
+      "owner": "quality-maintainers",
+      "role": "test",
+      "lifecycle": "active"
+    },
+    {
+      "path": "tests/test_study_contract.py",
+      "owner": "quality-maintainers",
+      "role": "test",
+      "lifecycle": "active"
+    },
+    {
+      "path": "tests/test_study_execution.py",
+      "owner": "quality-maintainers",
+      "role": "test",
+      "lifecycle": "active"
+    },
+    {
+      "path": "tests/test_study_replay.py",
       "owner": "quality-maintainers",
       "role": "test",
       "lifecycle": "active"

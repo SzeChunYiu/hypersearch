@@ -28,7 +28,7 @@ The demo finds a zero-sum-free sequence in `C2 × C2 × C2`, then checks every n
 PYTHONPATH=src python -m hypersearch demo --db /tmp/hypersearch.sqlite --moduli 2 2 3 --max-steps 5000
 ```
 
-Group rank is limited to 3, order to 64, witness length to 16 and search to 100,000 steps. A truncated search may still yield a valid lower-bound witness. The SQLite store preserves completed work: repeating the identical task does not rerun it. It charges each acquisition against a fixed attempt budget, including expired attempts. `--budget` must match the database's original value. If other tasks are pending, the demo processes the first eligible task and reports its actual identity.
+Group rank is limited to 3, order to 64, witness length to 16 and search to 100,000 steps. A truncated search may still yield a valid lower-bound witness. The SQLite store preserves completed work: repeating the identical task does not rerun it. It charges each acquisition against a fixed attempt budget, including expired attempts. `--budget` must match the database's original value. The demo acquires only its exact submitted task; unrelated pending work is untouched.
 
 To replay a certificate, save the `certificate` object from demo JSON to `certificate.json`, then run:
 
@@ -63,7 +63,7 @@ Start with [architecture](docs/ARCHITECTURE.md), [roadmap](docs/ROADMAP.md), [im
 
 MIT licensed. External projects retain their own licenses; references do not imply code reuse or endorsement.
 
-## Governed adoption (0.2.0 development)
+## Governed adoption (0.3.0 development)
 
 Run `PYTHONPATH=src python -m hypersearch.governance .` to check exact tracked-material ownership, lifecycle, version consistency and immutable CI action references. See the [management index](docs/governance/INDEX.md), [consumer contract](docs/governance/ADOPTION.md) and [twin development protocol](docs/governance/TWIN_DEVELOPMENT.md). Development pins remain experimental until consumer commissioning and independent release review.
 
@@ -74,3 +74,10 @@ PYTHONPATH=src python -m hypersearch verify-multiwise examples/multiwise-c2-k2.j
 ```
 
 This three-term sequence has at most one disjoint zero-sum subsequence, establishing only `D_2(C2) >= 4`. The verifier accepts ambient groups of order up to 1,000,000 but sequences of at most 16 terms; it is not the solver for the full frontier programme. A consumer's claim registry and promotion HOLD remain authoritative.
+
+## Frozen supplied-certificate route
+
+Development 0.3.0 adds run-study and externally digest-bound replay-study, using
+the existing Store and only bundled bounded verifiers. See
+[operation/qualification](docs/STUDIES.md) and [schemas](docs/STUDY_CONTRACT.md).
+Consumer claim authority and promotion holds remain separate.

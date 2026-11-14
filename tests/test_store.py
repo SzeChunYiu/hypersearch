@@ -9,6 +9,23 @@ from hypersearch.store import Store, StaleLease
 
 
 class StoreTests(unittest.TestCase):
+    def test_exact_task_acquisition_never_runs_unrelated_work(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            store = Store(Path(tmp) / "exact.sqlite", max_attempts=3)
+            store.submit("a-unrelated", {"input": 1})
+            store.submit("z-selected", {"input": 2})
+            before = store.snapshot()
+            self.assertIsNone(store.acquire("worker", task_id="missing"))
+            self.assertEqual(store.snapshot(), before)
+            lease = store.acquire("worker", task_id="z-selected")
+            self.assertEqual(lease.task_id, "z-selected")
+            state = store.snapshot()
+            self.assertEqual(state["tasks"][0]["state"], "pending")
+            self.assertEqual(state["budget"]["spent"], 1)
+            store.complete(lease, {"done": True})
+            self.assertIsNone(store.acquire("worker", task_id="z-selected"))
+            self.assertEqual(store.snapshot()["budget"]["spent"], 1)
+
     def setUp(self):
         self.tmp = tempfile.TemporaryDirectory()
         self.addCleanup(self.tmp.cleanup)
