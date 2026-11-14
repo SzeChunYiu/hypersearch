@@ -88,8 +88,6 @@ class CliTests(unittest.TestCase):
                 self.assertEqual(main(["demo", "--db", str(Path(tmp) / "invalid.sqlite"), "--moduli", "0"]), 2)
 
 
-if __name__ == "__main__":
-    unittest.main()
 
 class MultiwiseCliTests(unittest.TestCase):
     def test_multwise_cli_bindings(self):
@@ -104,3 +102,7 @@ class MultiwiseCliTests(unittest.TestCase):
             self.assertEqual(json.loads(output.getvalue())["lower_bound"], 4)
             with contextlib.redirect_stderr(io.StringIO()):
                 self.assertEqual(main(["verify-multiwise", str(path), "--moduli", "2", "--k", "3"]), 2)
+
+
+if __name__ == "__main__":
+    unittest.main()
