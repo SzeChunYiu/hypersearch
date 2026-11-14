@@ -31,15 +31,21 @@ def _digest(certificate):
                              allow_nan=False).encode()).hexdigest()
 
 
+def validate_search_inputs(moduli, max_steps):
+    """Validate bounded adapter inputs without search or persistent effects."""
+    ns = _moduli(moduli)
+    if type(max_steps) is not int or not 1 <= max_steps <= MAX_STEPS:
+        raise ValueError("max_steps must be an integer between 1 and 100000")
+    return ns
+
+
 def search(moduli, max_steps=10_000):
     """Return a deterministic witness certificate within a candidate-step cap.
 
     Nondecreasing sequences remove permutation duplicates, not repeated terms.
     A truncated search may still produce a valid lower-bound witness.
     """
-    ns = _moduli(moduli)
-    if type(max_steps) is not int or not 1 <= max_steps <= MAX_STEPS:
-        raise ValueError("max_steps must be an integer between 1 and 100000")
+    ns = validate_search_inputs(moduli, max_steps)
     zero = (0,) * len(ns)
     elements = [g for g in product(*(range(n) for n in ns)) if g != zero]
     best = []
