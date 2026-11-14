@@ -1,0 +1,215 @@
+{
+  "schema": "hypersearch.materials/v1",
+  "materials": [
+    {
+      "path": ".github/CODEOWNERS",
+      "owner": "release-maintainers",
+      "role": "governance",
+      "lifecycle": "active"
+    },
+    {
+      "path": ".github/ISSUE_TEMPLATE/engineering.md",
+      "owner": "documentation-maintainers",
+      "role": "documentation",
+      "lifecycle": "active"
+    },
+    {
+      "path": ".github/pull_request_template.md",
+      "owner": "documentation-maintainers",
+      "role": "documentation",
+      "lifecycle": "active"
+    },
+    {
+      "path": ".github/workflows/tests.yml",
+      "owner": "release-maintainers",
+      "role": "automation",
+      "lifecycle": "active"
+    },
+    {
+      "path": ".gitignore",
+      "owner": "project-maintainers",
+      "role": "configuration",
+      "lifecycle": "active"
+    },
+    {
+      "path": "AGENTS.md",
+      "owner": "documentation-maintainers",
+      "role": "documentation",
+      "lifecycle": "active"
+    },
+    {
+      "path": "CHANGELOG.md",
+      "owner": "documentation-maintainers",
+      "role": "documentation",
+      "lifecycle": "active"
+    },
+    {
+      "path": "CONTRIBUTING.md",
+      "owner": "documentation-maintainers",
+      "role": "documentation",
+      "lifecycle": "active"
+    },
+    {
+      "path": "LICENSE",
+      "owner": "project-maintainers",
+      "role": "license",
+      "lifecycle": "active"
+    },
+    {
+      "path": "README.md",
+      "owner": "documentation-maintainers",
+      "role": "documentation",
+      "lifecycle": "active"
+    },
+    {
+      "path": "docs/ARCHITECTURE.md",
+      "owner": "documentation-maintainers",
+      "role": "documentation",
+      "lifecycle": "active"
+    },
+    {
+      "path": "docs/LITERATURE.md",
+      "owner": "documentation-maintainers",
+      "role": "documentation",
+      "lifecycle": "active"
+    },
+    {
+      "path": "docs/PRIVATE_INTEGRATION.md",
+      "owner": "documentation-maintainers",
+      "role": "documentation",
+      "lifecycle": "active"
+    },
+    {
+      "path": "docs/ROADMAP.md",
+      "owner": "documentation-maintainers",
+      "role": "documentation",
+      "lifecycle": "active"
+    },
+    {
+      "path": "docs/STATUS.md",
+      "owner": "documentation-maintainers",
+      "role": "documentation",
+      "lifecycle": "active"
+    },
+    {
+      "path": "docs/governance/ADOPTION.md",
+      "owner": "documentation-maintainers",
+      "role": "documentation",
+      "lifecycle": "active"
+    },
+    {
+      "path": "docs/governance/INDEX.md",
+      "owner": "documentation-maintainers",
+      "role": "documentation",
+      "lifecycle": "active"
+    },
+    {
+      "path": "docs/governance/LIFECYCLE.md",
+      "owner": "documentation-maintainers",
+      "role": "documentation",
+      "lifecycle": "active"
+    },
+    {
+      "path": "docs/governance/TWIN_DEVELOPMENT.md",
+      "owner": "documentation-maintainers",
+      "role": "documentation",
+      "lifecycle": "active"
+    },
+    {
+      "path": "examples/multiwise-c2-k2.json",
+      "owner": "project-maintainers",
+      "role": "configuration",
+      "lifecycle": "active"
+    },
+    {
+      "path": "governance/materials.json",
+      "owner": "release-maintainers",
+      "role": "governance",
+      "lifecycle": "active"
+    },
+    {
+      "path": "governance/release.json",
+      "owner": "release-maintainers",
+      "role": "governance",
+      "lifecycle": "active"
+    },
+    {
+      "path": "pyproject.toml",
+      "owner": "project-maintainers",
+      "role": "configuration",
+      "lifecycle": "active"
+    },
+    {
+      "path": "src/hypersearch/__init__.py",
+      "owner": "core-maintainers",
+      "role": "code",
+      "lifecycle": "active"
+    },
+    {
+      "path": "src/hypersearch/__main__.py",
+      "owner": "core-maintainers",
+      "role": "code",
+      "lifecycle": "active"
+    },
+    {
+      "path": "src/hypersearch/cli.py",
+      "owner": "core-maintainers",
+      "role": "code",
+      "lifecycle": "active"
+    },
+    {
+      "path": "src/hypersearch/governance.py",
+      "owner": "core-maintainers",
+      "role": "code",
+      "lifecycle": "active"
+    },
+    {
+      "path": "src/hypersearch/math_adapter.py",
+      "owner": "core-maintainers",
+      "role": "code",
+      "lifecycle": "active"
+    },
+    {
+      "path": "src/hypersearch/multiwise.py",
+      "owner": "core-maintainers",
+      "role": "code",
+      "lifecycle": "active"
+    },
+    {
+      "path": "src/hypersearch/store.py",
+      "owner": "core-maintainers",
+      "role": "code",
+      "lifecycle": "active"
+    },
+    {
+      "path": "tests/test_cli.py",
+      "owner": "quality-maintainers",
+      "role": "test",
+      "lifecycle": "active"
+    },
+    {
+      "path": "tests/test_governance.py",
+      "owner": "quality-maintainers",
+      "role": "test",
+      "lifecycle": "active"
+    },
+    {
+      "path": "tests/test_math_adapter.py",
+      "owner": "quality-maintainers",
+      "role": "test",
+      "lifecycle": "active"
+    },
+    {
+      "path": "tests/test_multiwise.py",
+      "owner": "quality-maintainers",
+      "role": "test",
+      "lifecycle": "active"
+    },
+    {
+      "path": "tests/test_store.py",
+      "owner": "quality-maintainers",
+      "role": "test",
+      "lifecycle": "active"
+    }
+  ]
+}
