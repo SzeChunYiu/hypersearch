@@ -59,6 +59,11 @@ The public core will remain usable without private infrastructure. Private resea
 
 Start with [architecture](docs/ARCHITECTURE.md), [roadmap](docs/ROADMAP.md), [implementation status](docs/STATUS.md), [literature review](docs/LITERATURE.md), and [private-consumer boundary](docs/PRIVATE_INTEGRATION.md). Contribution rules are in [AGENTS.md](AGENTS.md) and [CONTRIBUTING.md](CONTRIBUTING.md).
 
+Candidate harness changes can be assessed by the pure [frozen improvement
+comparison](docs/IMPROVEMENTS.md). It requires complete finite-suite evidence,
+a matched reported-operation budget and an explicit no-benefit threshold; it
+does not run work or authorize promotion.
+
 MIT licensed. External projects retain their own licenses; references do not imply code reuse or endorsement.
 
 ## Governed adoption (0.4.0 development)

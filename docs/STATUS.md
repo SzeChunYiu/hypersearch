@@ -1,11 +1,11 @@
-# Status — 2026-11-14
+# Status — 2026-11-15
 
 ## Observed implementation
 
 - Foundation commit f7254533a9310060bde7f045e7ba89b12d520073: 18 tests and demo passed in GitHub Actions on Python 3.11/3.12/3.13.
 - Governed-adoption development: 33 tests passed locally on Python 3.12.14, including inventory/version checks, mutable-action refusal, exact multiwise verification and task binding.
 - Multiwise C2 known-answer example verifies only D_2(C2) >= 4. An assignment-based tiny oracle cross-checks the subset-packing algorithm. No formal proof, independent-team replication or novel theorem is claimed.
-- Current management version is 0.5.0 development. Exact source pins distinguish this from the original 0.1.0 foundation.
+- Current management version is 0.8.0 development. Exact source pins distinguish every instrument from the original 0.1.0 foundation and from intervening consumer pins.
 - Public implementation contains no private research material. Consumer integration is a separate, pinned reviewable change; consumer CI/commissioning evidence belongs with that change.
 
 ## Admission correction — local qualification
@@ -186,3 +186,28 @@ studies keep their pins. No research executed.
   [PROGRAMS.md](PROGRAMS.md).
 
 Neither executes research here, promotes a claim or lifts a consumer hold.
+
+## Frozen improvement gate — 0.8.0 development
+
+Implemented: a pure finite-suite baseline/candidate comparison checks the raw
+plan and a local two-file evaluator source bundle, plus declared baseline and
+candidate identities, every task, expected binary
+outcome, weight, matched reported-operation budget and positive gain threshold.
+It retains failures, timeouts and not-run cases. Selective reporting, duplicate
+or changed identities, type ambiguity and unbound evidence are refused. False
+acceptance, budget overrun and no-benefit controls reject; incomplete or
+unknown-cost comparisons are inconclusive. The output grants no promotion or
+execution authority. It neither attests baseline/candidate execution nor
+validates candidate source declarations or expected labels against a domain
+oracle.
+
+Tested locally: adversarial software conformance covers material improvement,
+identical/no-benefit and regression controls, false acceptance hidden inside an
+aggregate gain, over-budget execution, timeout, failure, unknown cost, reordered
+records and deterministic replay. This is not yet independent review or public
+consumer qualification.
+
+Not implemented or deployed: execution, authenticated cost measurement,
+adaptive/held-out statistical inference, remote enforcement, release promotion
+or scientific claim decisions. Existing studies and Davenport claim holds keep
+their original pins and authority.

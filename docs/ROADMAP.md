@@ -24,3 +24,8 @@ Track verified useful results per total cost; false acceptance/rejection on know
 ## Continuous work policy
 
 Each improvement cycle inspects the current repository and open work, reads relevant primary sources, chooses one bounded unmet acceptance criterion, implements and tests a scoped PR, and records evidence and blockers. Do not duplicate open PRs, claim an unrun benchmark, auto-publish scientific claims, merge without required independent review, or copy private material. A scheduled development pass is not a continuously running scientific worker fleet.
+
+The 0.8.0 finite-suite gate is only the first Phase 6 instrument. It covers a
+precommitted finite comparison with reported integer costs. Held-out-family
+governance, seeds for stochastic candidates, independent cost attestation,
+statistical uncertainty and independent consumer review remain exit blockers.

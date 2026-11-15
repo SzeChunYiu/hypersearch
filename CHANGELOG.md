@@ -2,6 +2,19 @@
 
 No stable release has been commissioned. Entries describe development work, not production certification.
 
+## 0.8.0 development — frozen finite-suite improvement gate
+
+- Add a pure, closed-schema baseline/candidate evaluator with a checked local
+  evaluator bundle and exact declared source, task, budget and threshold record
+  identities.
+- Retain every planned success, failure, timeout and not-run outcome; refuse
+  selective reporting and identity/type ambiguity.
+- Reject false acceptance, budget overrun and no-benefit controls; incomplete
+  or unknown-cost evidence is inconclusive.
+- Output has no execution or promotion authority. Reported operations, case
+  outcomes and candidate source identities are not independently attested.
+  Existing study and programme pins are unchanged.
+
 ## Unreleased — 0.3.0 development
 
 - Add frozen bundle/execution/receipt contracts and bounded supplied-certificate
