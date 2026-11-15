@@ -85,3 +85,10 @@ Consumer claim authority and promotion holds remain separate.
 Development 0.4.0 adds registered review tasks, persisted grants before native
 session handoff, and lease-bound authored reports. See [review protocol](docs/REVIEWS.md).
 All report receipts remain NOT_FORMALLY_VERIFIED with no claim authority.
+
+## Shadow recommendations — 0.5.0 development
+
+The pure [director API](docs/DIRECTOR.md) ranks frozen candidate declarations
+without Store access or execution authority. It provides supplied-order, declared
+gain/cost and seeded-hash-order baselines. These are hypothetical scores, not
+calibrated VOI, scientific acceptance or evidence of optimal allocation.

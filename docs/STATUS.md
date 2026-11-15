@@ -5,7 +5,7 @@
 - Foundation commit f7254533a9310060bde7f045e7ba89b12d520073: 18 tests and demo passed in GitHub Actions on Python 3.11/3.12/3.13.
 - Governed-adoption development: 33 tests passed locally on Python 3.12.14, including inventory/version checks, mutable-action refusal, exact multiwise verification and task binding.
 - Multiwise C2 known-answer example verifies only D_2(C2) >= 4. An assignment-based tiny oracle cross-checks the subset-packing algorithm. No formal proof, independent-team replication or novel theorem is claimed.
-- Current management version is 0.4.0 development. Exact source pins distinguish this from the original 0.1.0 foundation.
+- Current management version is 0.5.0 development. Exact source pins distinguish this from the original 0.1.0 foundation.
 - Public implementation contains no private research material. Consumer integration is a separate, pinned reviewable change; consumer CI/commissioning evidence belongs with that change.
 
 ## Admission correction — local qualification
@@ -70,3 +70,30 @@ These are implementation-author checks, not independent qualification.
 Independent code/receiver review, public CI and actual-consumer commissioning
 remain required before adoption. Existing 0.3 studies retain their original
 pins. No research was executed and no scientific claim was promoted.
+
+## Pure shadow director — 0.5.0 development, 2026-11-15
+
+Initial issue #16 software increment: closed frozen observations and policies
+produce deterministic shadow recommendations without Store access, grants,
+filesystem effects or provider calls. Declared gain/cost values are hypothetical;
+seeded hash order is not an exactly uniform random baseline. No optimality,
+calibrated VOI, scientific efficacy or autonomous execution is established.
+
+Author checks on Python 3.12.14: 87 tests passed (76 existing, 11 new director
+conformance tests), local governance passed, fresh README demo and bounded
+multiwise example passed. Only synthetic/known-answer software fixtures ran.
+Existing study/review code and tests are unchanged. Independent review, public CI
+and any consumer adoption remain pending. Original frozen evaluator pins persist.
+
+See [director contract](DIRECTOR.md) and [design alternatives](DIRECTOR_DESIGN.md).
+No research HOLD changes; issue #16 remains open for separately specified work.
+
+### Pre-merge policy correction
+
+Author candidate da28c40 is superseded: shared positive-gain filtering had
+prevented exploratory policies from selecting zero-immediate-gain prerequisites.
+Legality now depends only on snapshot gates. Supplied/hash order may select any
+legal declared gain; greedy ratio explicitly skips nonpositive gain.
+Duplicate frozen task digests refuse even under distinct candidate IDs.
+Costs are explicitly potentially incomplete declared estimates, not measured totals.
+The corrected synthetic prerequisite and duplicate-task controls pass.
