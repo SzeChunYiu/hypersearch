@@ -41,6 +41,10 @@ example by requiring two independently written programs to agree.
   preregistration asks for.
 - Limits: `timeout_seconds` (1..21600), `memory_megabytes` (64..65536, an
   address-space limit), `commit_margin_seconds` (5..60), `db_max_attempts`.
+  The last is a ceiling on **all leases granted in one database**, not per
+  task: a family sharing a database needs at least one attempt per study plus
+  one per replay run there, every bundle using it must name the same ceiling,
+  and a second database counts separately.
   A written file is capped at 1 MiB; the number of files is not capped.
 - When the program ends or times out, **its process group is killed**. A
   process the program deliberately moves out of that group survives.
@@ -50,6 +54,20 @@ program runs with the operator's file and network access. Run only programs
 from a consumer commit you have reviewed.
 
 ## Outcomes
+
+A start that is refused before any lease exits 2 and prints
+`"execution": "not_started"` with no `outcome_status` and a `reason`:
+`attempt budget exhausted` when the database's ceiling is spent, `task is
+leased to another attempt` when the ceiling has room but the task is held, or
+`task was completed by another attempt` when it finished while this start was
+being admitted (run the command again for its receipt as `not_rerun`). It also
+prints the `budget` (`maximum`, `spent`) and the stored `task_state`, read
+after the refusal. When the ceiling is spent and the task is also held, the
+ceiling is named. `running` includes a lease whose holder died; it is
+reclaimed after expiry if the ceiling has room. A refused start charges
+nothing and writes no receipt, but the task (for a replay, its replay ID)
+stays registered as pending in that database. The supplied-witness and census
+routes print the same object; the reason, budget and state are new in 0.7.1.
 
 `PROGRAM_HOLDS` (exit 0), `PROGRAM_FAILS` (exit 1), `EXECUTION_FAILED` or
 `INCOMPLETE` (exit 2). A non-zero program exit, a death by signal, or
@@ -140,6 +158,12 @@ admitted in source, and the launch wrapper ran the program outside the real
 main module. Identity binding, cross-route refusal, the output parser and
 the other routes held throughout. The last fixes were checked by the author
 and CI, not reviewed again.
+
+The 0.7.1 refusal reasons have author checks and one review by a separate
+session started by the author, which found a third refusal case (a task
+completed by another attempt during admission) reported under the wrong
+reason and three mutations the first test did not catch; both are fixed. Not
+independent certification.
 
 Limits. Not a sandbox; a process that leaves the group survives. The
 instrument never checks program logic. Determinism

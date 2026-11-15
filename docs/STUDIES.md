@@ -128,6 +128,9 @@ New evaluator = reviewed study revision and consumer pin, not implicit upgrade.
 Rollback restores future execution configuration and preserves historical evidence.
 Exits: 0 verified; 1 completed witness refutation; 2 refusal, unavailable grant,
 incomplete/failed execution or replay mismatch. Always inspect receipt scope.
+A start refused before any lease prints `"execution": "not_started"` with a
+`reason`, the database's `budget` and the `task_state` (since 0.7.1); see
+[pinned programs](PROGRAMS.md#outcomes).
 
 ## Qualification
 
