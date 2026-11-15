@@ -6,7 +6,7 @@ from test_study_contract import artifact
 HOLDS = b'import json, sys\narguments = json.loads(sys.stdin.read())\nprint(json.dumps({"holds": True, "summary": {"echo": arguments}}))\n'
 
 
-def make_program(root, source=HOLDS, *, arguments=None, timeout=30, memory=512, path="program.py"):
+def make_program(root, source=HOLDS, *, arguments=None, timeout=30, memory=512, path="program.py", attempts=5):
     """A committed synthetic consumer plus the frozen program bundle that names it."""
     core, consumer, study = make(root)
     (consumer / path).write_bytes(source)
@@ -14,7 +14,7 @@ def make_program(root, source=HOLDS, *, arguments=None, timeout=30, memory=512, 
     kept["program"] = artifact(path, source)
     question = {"adapter": "pinned-program", "program_sha256": digest(source), "arguments": arguments or {},
                 "claim_type": "program-output", "assumptions_sha256": kept["preregistration"]["sha256"]}
-    limits = {"db_max_attempts": 5, "timeout_seconds": timeout, "commit_margin_seconds": 10, "memory_megabytes": memory}
+    limits = {"db_max_attempts": attempts, "timeout_seconds": timeout, "commit_margin_seconds": 10, "memory_megabytes": memory}
     manifest = encode({"schema": "hypersearch.program-manifest/v1", "study_id": "fixture-program", "question": question,
                        "limits": limits, "artifact_sha256": {k: v["sha256"] for k, v in kept.items()}})
     (consumer / "program.json").write_bytes(manifest)

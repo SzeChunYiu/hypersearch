@@ -41,6 +41,9 @@ example by requiring two independently written programs to agree.
   preregistration asks for.
 - Limits: `timeout_seconds` (1..21600), `memory_megabytes` (64..65536, an
   address-space limit), `commit_margin_seconds` (5..60), `db_max_attempts`.
+  The last is a ceiling on **all leases granted in one database**, not per
+  task: a family of studies sharing a database needs at least one attempt
+  per study, and replays kept in a second database need their own.
   A written file is capped at 1 MiB; the number of files is not capped.
 - When the program ends or times out, **its process group is killed**. A
   process the program deliberately moves out of that group survives.
@@ -50,6 +53,13 @@ program runs with the operator's file and network access. Run only programs
 from a consumer commit you have reviewed.
 
 ## Outcomes
+
+A start that is refused before any lease prints `"execution": "not_started"`
+with a `reason`: `attempt budget exhausted` when the database's ceiling is
+spent, or `task is leased to another attempt` when the ceiling has room but
+the task is held. It also prints the `budget` (`maximum`, `spent`) and the
+`task_state`. Nothing is charged and no receipt is written; the same holds
+for the supplied-witness and census routes (since 0.7.1).
 
 `PROGRAM_HOLDS` (exit 0), `PROGRAM_FAILS` (exit 1), `EXECUTION_FAILED` or
 `INCOMPLETE` (exit 2). A non-zero program exit, a death by signal, or

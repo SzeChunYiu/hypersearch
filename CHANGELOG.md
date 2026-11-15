@@ -96,3 +96,17 @@ software increment, not completion or director effectiveness evidence.
 - Replay comparison for every frozen route is now by canonical encoding, so
   outcomes that differ only as `1` versus `true` no longer match. Typed
   study and census outcomes are unaffected.
+
+## 0.7.1 development — a refused start says why
+
+- A frozen task that cannot be leased now reports which refusal occurred:
+  `attempt budget exhausted` or `task is leased to another attempt`, with the
+  database's `budget` and the `task_state`. Before, both read "task
+  unavailable or attempts exhausted". Found in use: a family of ten studies
+  frozen with a ceiling of eight would have had its last two studies refused
+  with no indication that the ceiling, not the task, was the cause.
+- Documentation states that `db_max_attempts` counts every lease in one
+  database, across tasks.
+- No schema, verifier or receipt changes. The version changes, so a bundle
+  that wants this behaviour must name 0.7.1 with this commit; existing
+  studies keep their old pins.

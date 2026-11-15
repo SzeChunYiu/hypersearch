@@ -45,6 +45,34 @@ class ProgramRouteTests(unittest.TestCase):
         receipt = contract.trusted_receipt(Path(result["receipt_path"]).read_bytes(), result["receipt_sha256"])
         return result["outcome_status"], receipt
 
+    def test_a_refused_start_names_its_reason_and_changes_nothing(self):
+        # The attempt ceiling counts every lease in the database, not leases per task.
+        core, consumer, bundle = make_program(self.root, attempts=1)
+        first = self.run_in_process(core, consumer, contract.wrapper(bundle))
+        self.assertEqual(first["execution"], "completed")
+        receipt = contract.trusted_receipt(Path(first["receipt_path"]).read_bytes(), first["receipt_sha256"])
+        replay = contract.wrapper(bundle, parent=first["receipt_sha256"], replay_id="second")
+        with patch("hypersearch.study.CORE_ROOT", core):
+            refused = route.execute(replay, consumer_root=consumer, database=self.root / "run.sqlite",
+                                    export=self.root / "refused", parent_receipt=receipt)
+        self.assertEqual((refused["execution"], refused["reason"]), ("not_started", "attempt budget exhausted"))
+        self.assertEqual((refused["budget"], refused["task_state"]), ({"maximum": 1, "spent": 1}, "pending"))
+        after = Store(self.root / "run.sqlite", max_attempts=1).snapshot()
+        self.assertEqual((len(after["results"]), after["budget"]["spent"]), (1, 1))
+        self.assertFalse((self.root / "refused").exists())
+        # A task that another attempt holds is refused for the other reason, with budget to spare.
+        root = Path(tempfile.mkdtemp(dir=self.root))
+        core, consumer, bundle = make_program(root)
+        value = contract.wrapper(bundle)
+        task_id, _ = contract.execution_identity(value)
+        store = Store(self.root / "busy.sqlite", max_attempts=5)
+        store.submit(task_id, value)
+        self.assertIsNotNone(store.acquire("someone-else", lease_seconds=60, task_id=task_id))
+        busy = self.run_in_process(core, consumer, value, name="busy")
+        self.assertEqual((busy["execution"], busy["reason"], busy["task_state"]),
+                         ("not_started", "task is leased to another attempt", "running"))
+        self.assertEqual(busy["budget"], {"maximum": 5, "spent": 1})
+
     def test_output_is_recorded_deduplicated_and_replayed(self):
         core, consumer, bundle = make_program(self.root, arguments={"n": 7})
         first = self.run_in_process(core, consumer, contract.wrapper(bundle))
