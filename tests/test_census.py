@@ -76,6 +76,30 @@ class CensusVerifierTests(unittest.TestCase):
                        {"formal_proof": True}, {"count": honest["levels"][-1] + 1}, {"scope": "other"}):
             with self.assertRaises(ValueError, msg=change):
                 contract.verification(dict(honest, **change), bundle)
+        for change in ({"levels": [1, 5] + honest["levels"][2:]}, {"levels": [1, 8, 10**6] + honest["levels"][3:]},
+                       {"levels": [1, 8, 32, 0, 0, 0, 0], "count": 0, "example": None},
+                       {"example": honest["example"][::-1]}):
+            with self.assertRaises(ValueError, msg=change):
+                contract.verification(dict(honest, **change), bundle)
+
+    def test_parent_refutes_a_false_zero_below_the_standard_sequence(self):
+        # C_3^2 has the zero-sum-free sequence 01 01 10 10, so a zero at length 4 is provably false.
+        with tempfile.TemporaryDirectory() as directory:
+            _, _, bundle = make_census(Path(directory), length=4, short_max=4)
+        honest = census(ask([3, 3], 4, 4))
+        self.assertEqual((honest["count"], contract.verification(honest, bundle)["status"]), (72, "CENSUS_NONEMPTY"))
+        for levels in ([1, 8, 32, 0, 0], [1, 8, 32, 72, 0], [1, 8, 0, 0, 0]):
+            with self.assertRaises(ValueError, msg=levels):
+                contract.verification(dict(honest, count=0, example=None, levels=levels), bundle)
+        self.assertEqual(contract._free_prefix([3, 3], 7), 4)
+        self.assertEqual(contract._free_prefix([2, 4], 3), 3)
+
+    def test_subset_check_is_inclusive_at_both_bounds(self):
+        ones = lambda n: [[1]] * n
+        self.assertIsNotNone(offending_subsequence(ones(5), [5], 5, None))   # zero-sum of length exactly short_max
+        self.assertIsNone(offending_subsequence(ones(5), [5], 4, None))
+        self.assertIsNotNone(offending_subsequence(ones(5), [5], 4, 5))      # zero-sum of length exactly long_min
+        self.assertIsNone(offending_subsequence(ones(6), [5], 4, 6))         # its only zero-sums have length 5
 
 
 class CensusRouteTests(unittest.TestCase):

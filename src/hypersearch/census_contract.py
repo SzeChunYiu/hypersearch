@@ -1,4 +1,7 @@
 """Closed admission for frozen exhaustive-census tasks; reuses the study wrapper and receipt shapes."""
+from functools import lru_cache
+from math import comb, prod
+
 from . import study_contract, study_receipts
 from .census_verifier import VERIFIER, offending_subsequence, validate_question
 from .study_json import encode, fields, integer, parse
@@ -16,7 +19,7 @@ def validate_bundle(value):
     fields(limits, "db_max_attempts timeout_seconds commit_margin_seconds")
     integer(limits["db_max_attempts"], 1, 2**63 - 1)
     integer(limits["timeout_seconds"], 1, 3600)
-    integer(limits["commit_margin_seconds"], 1, 60)
+    integer(limits["commit_margin_seconds"], 5, 60)  # the parent's example recheck runs inside the lease
     question = value["question"]
     fields(question, "adapter moduli length short_max long_min claim_type assumptions_sha256")
     if (question["adapter"] != "zero-sum-census" or question["claim_type"] != "exhaustive-census"
@@ -46,8 +49,30 @@ def execution_identity(value):
                                              validate=validate_wrapper)
 
 
+def _free_prefix(moduli, length):
+    """Leading terms of e_1 (n_1 - 1 times), e_2 (n_2 - 1 times), ... confirmed zero-sum-free here, up to length."""
+    zero, sums, terms = (0,) * len(moduli), set(), 0
+    for i, n in enumerate(moduli):
+        unit = tuple(int(j == i) for j in range(len(moduli)))
+        for _ in range(n - 1):
+            new = {unit} | {tuple((a + b) % m for a, b, m in zip(s, unit, moduli)) for s in sums}
+            if terms == length or zero in new:
+                return terms
+            sums |= new; terms += 1
+    return terms
+
+
+@lru_cache(maxsize=4)
+def _offence(example, moduli, short, long):
+    """One subset enumeration per distinct example; the route revalidates the same outcome several times."""
+    return offending_subsequence([list(term) for term in example], list(moduli), short, long) is not None
+
+
 def verification(value, bundle):
-    """Check a completed census result against its frozen question; recheck any example independently."""
+    """Check a completed census result against its frozen question; recheck any example independently.
+
+    The profile checks are necessary conditions only. They cannot confirm a count of zero.
+    """
     question = bundle["question"]
     fields(value, "scope moduli length short_max long_min count levels example evidence_kind formal_proof novelty_assessed")
     length = question["length"]
@@ -62,17 +87,25 @@ def verification(value, bundle):
     integer(count, 0, levels[-1])
     if levels[0] != 1 or (question["long_min"] is None and count != levels[-1]):
         raise ValueError("inconsistent census counts")
-    if any(levels[d] == 0 and levels[d + 1] for d in range(length)):
+    moduli = question["moduli"]
+    order = prod(moduli)
+    if levels[1] != order - 1:
+        raise ValueError("census profile does not start with the nonzero elements")
+    if any(levels[d + 1] > min(levels[d] * (order - 1), comb(order + d - 1, d + 1)) for d in range(length)):
         raise ValueError("census profile is not inherited")
+    free = _free_prefix(moduli, length)  # a zero-sum-free sequence survives every short and long condition
+    if any(levels[d] == 0 for d in range(free + 1)) or (free == length and count == 0):
+        raise ValueError("census result contradicts a known zero-sum-free sequence")
     if (count == 0) != (example is None):
         raise ValueError("census example does not match its count")
     if example is not None:
-        moduli = question["moduli"]
         if (type(example) is not list or len(example) != length
                 or any(type(term) is not list or len(term) != len(moduli)
                        or any(type(x) is not int or not 0 <= x < n for x, n in zip(term, moduli)) for term in example)):
             raise ValueError("malformed census example")
-        if offending_subsequence(example, moduli, question["short_max"], question["long_min"]) is not None:
+        if example != sorted(example):
+            raise ValueError("census example is not in walk order")
+        if _offence(tuple(map(tuple, example)), tuple(moduli), question["short_max"], question["long_min"]):
             raise ValueError("census example contains a forbidden zero-sum")
     return {"status": "CENSUS_EMPTY" if count == 0 else "CENSUS_NONEMPTY", "verification": value}
 

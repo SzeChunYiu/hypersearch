@@ -197,6 +197,12 @@ D(C_5) = 5. A census of order-27 scale (C_3 x C_9, length 12) walked about
 25 million nodes in 30 seconds. Only synthetic fixtures and these small groups
 were run; no consumer research question was computed here.
 
-Limits. One implementation. A count of zero is not independently checked; only
-a reported example is. No formal proof. Independent review, public CI and
-consumer adoption are separate gates. No research executed, no claim promoted.
+Review by a separate session started by the author (declared separation, not
+authenticated independence): 13,089 comparisons of count, profile and example
+against two other algorithms, no mismatch; four non-blocking findings, all
+addressed (parent profile and standard-sequence checks, one cached example
+recheck with a 5-second minimum margin, boundary tests, documentation).
+
+Limits. One implementation. A count of zero above the standard sequence's
+length is not independently checked. No formal proof. Public CI and consumer
+adoption are separate gates. No research executed, no claim promoted.

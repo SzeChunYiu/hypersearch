@@ -71,7 +71,10 @@ software increment, not completion or director effectiveness evidence.
 - The census uses the existing Store, lease, receipt, export and replay path.
   To share it, the study executor takes a route; the supplied-witness route's
   behaviour, schemas, verifier IDs and bounds are unchanged.
-- A reported example is rechecked by the parent with separate code. A count of
-  zero has no independent check and needs a known-answer control and review.
+- A reported example is rechecked by the parent with separate code, once per
+  process. The parent applies necessary conditions to the level profile and
+  refuses a zero that contradicts the standard zero-sum-free sequence. Any
+  other zero has no independent check and needs a known-answer control and
+  review. The census commit margin is 5 to 60 seconds.
 - Additive development contract. The version changes, so every frozen bundle
   must name 0.6.0 with this commit; existing studies keep their old pins.

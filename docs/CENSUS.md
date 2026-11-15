@@ -1,10 +1,10 @@
 # Frozen exhaustive-census tasks — 0.6.0 development
 
 A census answers one finite question exhaustively: over a small finite abelian
-group, **how many sequences of length n have no nonempty zero-sum subsequence
-of length at most m and, optionally, none of length at least q?** A count of
-zero is an upper-bound statement about every sequence of that length; a
-positive count comes with one example.
+group, **how many multisets of n elements (sequences up to order) have no
+nonempty zero-sum subsequence of length at most m and, optionally, none of
+length at least q?** A count of zero is an upper-bound statement about every
+sequence of that length; a positive count comes with one example.
 
 It does not prove a theorem, assess novelty, accept a claim or lift any
 consumer hold. It is one implementation of a finite computation.
@@ -20,10 +20,12 @@ sequences, as a deletion of at most n − q terms summing to the total.
 
 Bounds: group order at most 64, rank at most 3, length at most 20,
 1 ≤ m ≤ n, and q either null or m < q ≤ n with n − q ≤ m − 1. Anything else is
-refused before enumeration.
+refused before enumeration. The bounds limit the question, not the work: a
+question inside them can need far more time than any admitted timeout, and
+then ends `INCOMPLETE`.
 
-The result has `count`, an `example` (the first survivor in walk order, or
-null), and `levels`: for each size d ≤ n, the number of multisets of that size
+The result has `count`, an `example` (the verifier reports its first survivor
+in walk order, or null), and `levels`: for each size d ≤ n, the number of multisets of that size
 with no zero-sum of length at most m. The profile is deterministic, so a
 replay must reproduce it exactly.
 
@@ -68,22 +70,34 @@ All closed, with the strict JSON encoding of the study schemas.
 - Question: adapter (`zero-sum-census`), moduli, length, short_max, long_min,
   claim_type (`exhaustive-census`), assumptions_sha256.
 - Limits: db_max_attempts, timeout_seconds (1..3600), commit_margin_seconds
-  (1..60).
+  (5..60; the parent's recheck of a 20-term example takes about a second and
+  runs inside the lease).
 - `hypersearch.census-execution/v1` and `hypersearch.census-receipt/v1` have
   the fields of their study counterparts. Task keys use the prefix `census-`.
   A study bundle is refused by the census route and the reverse.
 
 Outcome status is `CENSUS_EMPTY`, `CENSUS_NONEMPTY`, `EXECUTION_FAILED` or
 `INCOMPLETE`. Timeouts and crashes carry no result and are never a count.
+As for studies, an `INCOMPLETE` or `EXECUTION_FAILED` receipt completes its
+task: the same bundle is then `not_rerun`, and another attempt is a replay or
+a new bundle.
 
 ## What is and is not checked
 
 - The parent validates the child's result against the frozen question and
-  checks the level profile for internal consistency.
+  applies necessary conditions to the level profile: it starts 1, |G| − 1;
+  each level is at most (|G| − 1) times the one before and at most the number
+  of multisets of that size; an empty level is followed only by empty levels.
+- The parent refuses a zero that contradicts the standard zero-sum-free
+  sequence (each basis element e_i repeated n_i − 1 times): no level up to
+  that length may be empty, and the count is positive when n is at most that
+  length. This catches only zeros below Σ(n_i − 1).
 - A reported example is rechecked by the parent with a separate subset
-  enumeration. A false "nonempty" therefore needs two agreeing errors.
-- **A count of zero has no such independent check.** It rests on the single
-  enumeration and on replay determinism. Before a zero is relied on, run a
+  enumeration and must be in walk order. A false "nonempty" therefore needs
+  two agreeing errors. The parent does not check that it is the first
+  survivor.
+- **A count of zero above that length has no independent check.** It rests on
+  the single enumeration and on replay determinism. Before a zero is relied on, run a
   matching known-answer control (a neighbouring length with a known positive
   count, or a group with a published value) and have the code reviewed.
 - Tests compare the verifier with a brute-force oracle on small groups and

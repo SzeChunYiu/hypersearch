@@ -118,11 +118,13 @@ def offending_subsequence(sequence, moduli, short, long):
     size = len(sequence)
     zero = (0,) * len(moduli)
     sums = [zero] * (1 << size)
+    shared = {zero: zero}  # one object per group element keeps the table at one pointer per subset
     for mask in range(1, 1 << size):
         bit = mask & -mask
         term = sequence[bit.bit_length() - 1]
-        sums[mask] = tuple((a + b) % n for a, b, n in zip(sums[mask ^ bit], term, moduli))
-        if sums[mask] == zero:
+        point = tuple((a + b) % n for a, b, n in zip(sums[mask ^ bit], term, moduli))
+        sums[mask] = shared.setdefault(point, point)
+        if point == zero:
             terms = mask.bit_count()
             if terms <= short or (long is not None and terms >= long):
                 return [i for i in range(size) if mask >> i & 1]
