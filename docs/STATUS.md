@@ -5,7 +5,7 @@
 - Foundation commit f7254533a9310060bde7f045e7ba89b12d520073: 18 tests and demo passed in GitHub Actions on Python 3.11/3.12/3.13.
 - Governed-adoption development: 33 tests passed locally on Python 3.12.14, including inventory/version checks, mutable-action refusal, exact multiwise verification and task binding.
 - Multiwise C2 known-answer example verifies only D_2(C2) >= 4. An assignment-based tiny oracle cross-checks the subset-packing algorithm. No formal proof, independent-team replication or novel theorem is claimed.
-- Current management version is 0.3.0 development. Exact source pins distinguish this from the original 0.1.0 foundation.
+- Current management version is 0.4.0 development. Exact source pins distinguish this from the original 0.1.0 foundation.
 - Public implementation contains no private research material. Consumer integration is a separate, pinned reviewable change; consumer CI/commissioning evidence belongs with that change.
 
 ## Admission correction — local qualification
@@ -48,3 +48,25 @@ This is not a stable production release or a deployed autonomous scientist. No a
 Twin-system development shares contract IDs and tested generic improvements. Private pipeline compatibility and distributed-runtime parity require separate actual-consumer evidence. Preserve all consumer promotion holds and original frozen study pins.
 
 See docs/governance/INDEX.md for management ownership and docs/ROADMAP.md for unfinished phases.
+
+## External expert-report workflow — 0.4.0 development, 2026-11-15
+
+Implemented register/grant/submit/recover review commands on the existing Store.
+The externally authored report binds frozen inputs, source pins, declared role
+lineage and an actual current Store lease; all receipts explicitly retain
+NOT_FORMALLY_VERIFIED and no claim authority. No model launcher, provider call,
+arbitrary-code execution or independent authentication was added.
+
+Author qualification on Python 3.12.14: 76 tests passed (61 existing, 15 review),
+tracked-material governance passed, fresh README demo and multiwise example
+passed. Review tests include actual CLI handoff after persisted grant,
+concurrent completion, expired/reclaimed leases, source corruption, role
+conflicts, parent digest binding, negative reports and recoverable exports.
+All new fixtures are public synthetic data. The initial version-bump test run
+exposed a hardcoded fixture version; fixtures now use the running version while
+production admission still requires exact instrument/version pins.
+
+These are implementation-author checks, not independent qualification.
+Independent code/receiver review, public CI and actual-consumer commissioning
+remain required before adoption. Existing 0.3 studies retain their original
+pins. No research was executed and no scientific claim was promoted.

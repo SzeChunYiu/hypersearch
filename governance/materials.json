@@ -80,6 +80,12 @@
       "lifecycle": "active"
     },
     {
+      "path": "docs/REVIEWS.md",
+      "owner": "documentation-maintainers",
+      "role": "documentation",
+      "lifecycle": "experimental"
+    },
+    {
       "path": "docs/ROADMAP.md",
       "owner": "documentation-maintainers",
       "role": "documentation",
@@ -194,6 +200,30 @@
       "lifecycle": "active"
     },
     {
+      "path": "src/hypersearch/review_cli.py",
+      "owner": "core-maintainers",
+      "role": "code",
+      "lifecycle": "experimental"
+    },
+    {
+      "path": "src/hypersearch/review_contract.py",
+      "owner": "core-maintainers",
+      "role": "code",
+      "lifecycle": "experimental"
+    },
+    {
+      "path": "src/hypersearch/review_sources.py",
+      "owner": "core-maintainers",
+      "role": "code",
+      "lifecycle": "experimental"
+    },
+    {
+      "path": "src/hypersearch/review_workflow.py",
+      "owner": "core-maintainers",
+      "role": "code",
+      "lifecycle": "experimental"
+    },
+    {
       "path": "src/hypersearch/store.py",
       "owner": "core-maintainers",
       "role": "code",
@@ -242,6 +272,12 @@
       "lifecycle": "active"
     },
     {
+      "path": "tests/review_fixture.py",
+      "owner": "test-maintainers",
+      "role": "test",
+      "lifecycle": "experimental"
+    },
+    {
       "path": "tests/study_fixture.py",
       "owner": "quality-maintainers",
       "role": "test",
@@ -270,6 +306,18 @@
       "owner": "quality-maintainers",
       "role": "test",
       "lifecycle": "active"
+    },
+    {
+      "path": "tests/test_review_boundaries.py",
+      "owner": "test-maintainers",
+      "role": "test",
+      "lifecycle": "experimental"
+    },
+    {
+      "path": "tests/test_review_workflow.py",
+      "owner": "test-maintainers",
+      "role": "test",
+      "lifecycle": "experimental"
     },
     {
       "path": "tests/test_store.py",

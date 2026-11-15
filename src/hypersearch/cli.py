@@ -71,8 +71,13 @@ def main(argv=None):
             study.add_argument("--receipt", required=True)
             study.add_argument("--expected-receipt-sha256", required=True)
             study.add_argument("--replay-id", required=True)
+    from .review_cli import arguments as review_arguments
+    review_arguments(sub)
     args = parser.parse_args(argv)
     try:
+        if args.command.endswith("-review"):
+            from .review_cli import main as review_main
+            return review_main(args)
         if args.command in ("run-study", "replay-study"):
             from .study import main as study_main
             return study_main(args)

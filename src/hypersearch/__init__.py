@@ -1,2 +1,2 @@
 """Hypersearch's local research foundation; not a production agent service."""
-__version__ = "0.3.0"
+__version__ = "0.4.0"

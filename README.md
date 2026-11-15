@@ -13,8 +13,6 @@ Python 3.11+; runtime uses only the standard library. No API key or private repo
 ```sh
 git clone https://github.com/SzeChunYiu/hypersearch.git
 cd hypersearch
-# Until the foundation PR is merged:
-git switch tooling/governed-adoption
 PYTHONPATH=src python -m unittest discover -s tests -v
 PYTHONPATH=src python -m hypersearch demo --db /tmp/hypersearch.sqlite
 PYTHONPATH=src python -m hypersearch status --db /tmp/hypersearch.sqlite
@@ -63,7 +61,7 @@ Start with [architecture](docs/ARCHITECTURE.md), [roadmap](docs/ROADMAP.md), [im
 
 MIT licensed. External projects retain their own licenses; references do not imply code reuse or endorsement.
 
-## Governed adoption (0.3.0 development)
+## Governed adoption (0.4.0 development)
 
 Run `PYTHONPATH=src python -m hypersearch.governance .` to check exact tracked-material ownership, lifecycle, version consistency and immutable CI action references. See the [management index](docs/governance/INDEX.md), [consumer contract](docs/governance/ADOPTION.md) and [twin development protocol](docs/governance/TWIN_DEVELOPMENT.md). Development pins remain experimental until consumer commissioning and independent release review.
 
@@ -81,3 +79,9 @@ Development 0.3.0 adds run-study and externally digest-bound replay-study, using
 the existing Store and only bundled bounded verifiers. See
 [operation/qualification](docs/STUDIES.md) and [schemas](docs/STUDY_CONTRACT.md).
 Consumer claim authority and promotion holds remain separate.
+
+## Frozen external expert reports
+
+Development 0.4.0 adds registered review tasks, persisted grants before native
+session handoff, and lease-bound authored reports. See [review protocol](docs/REVIEWS.md).
+All report receipts remain NOT_FORMALLY_VERIFIED with no claim authority.
