@@ -146,8 +146,9 @@ class BytecodeBoundaryTests(unittest.TestCase):
         source = self.root / "bundle.json"; source.write_bytes(encode(bundle))
         arguments = ("run-study", "--bundle", source, "--consumer-root", consumer,
                      "--db", self.root / "inspect.sqlite", "--export", self.root / "inspect")
-        for flags, extra in (((*self.safe, "-i"), {}), (self.safe, {"PYTHONINSPECT": "1"})):
-            result = subprocess.run([sys.executable, *flags, "-m", "hypersearch", *map(str, arguments)],
+        for flags, extra, lead in (((*self.safe, "-i"), {}, ()), (self.safe, {"PYTHONINSPECT": "1"}, ()),
+                                   ((*self.safe, "-i"), {}, ("--",))):
+            result = subprocess.run([sys.executable, *flags, "-m", "hypersearch", *lead, *map(str, arguments)],
                                     env={"PATH": os.defpath, "PYTHONPATH": str(core / "src"), **extra},
                                     stdin=subprocess.DEVNULL, capture_output=True, text=True, timeout=90)
             self.assertEqual(result.returncode, 2, result.stderr)
@@ -182,6 +183,19 @@ class BytecodeBoundaryTests(unittest.TestCase):
         (core / "src/hypersearch/study_receipts.py").write_text("raise RuntimeError('synthetic crash')\n")
         result, effects = self.study(core, consumer, bundle, "crash")
         self.assertEqual((result.returncode, effects), (2, []), result.stderr)
+
+    def test_missing_working_directory_is_a_refusal_not_a_crash(self):
+        core, consumer, bundle = make(self.root)
+        gone = self.root / "gone"; gone.mkdir()
+        source = self.root / "bundle.json"; source.write_bytes(encode(bundle))
+        launch_line = " ".join([sys.executable, *self.safe, "-m", "hypersearch", "run-study", "--bundle", str(source),
+                                "--consumer-root", str(consumer), "--db", str(self.root / "gone.sqlite"),
+                                "--export", str(self.root / "gone-export")])
+        result = subprocess.run(["/bin/sh", "-c", f"cd {gone} && rmdir {gone} && exec {launch_line}"],
+                                env={"PATH": os.defpath, "PYTHONPATH": str(core / "src")},
+                                capture_output=True, text=True, timeout=90)
+        self.assertEqual(result.returncode, 2, result.stderr)
+        self.assertFalse((self.root / "gone.sqlite").exists())
 
     def test_verifier_child_ignores_adjacent_cache(self):
         core, _, bundle = make(self.root, multi=True, false=True)

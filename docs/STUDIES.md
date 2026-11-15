@@ -40,7 +40,7 @@ other code in front of a pinned module while `git status` stays clean:
   site directories and ambient `PYTHONPATH` entries can do the same.
 
 The study and review commands therefore **require** the launch shown above and
-refuse anything else before any effect:
+refuse anything else before any database, grant or export effect:
 
 | Flag | Refused without it because |
 |---|---|
@@ -59,8 +59,9 @@ tests or the demo without `-B` holds such caches; delete them first. The
 installed `hypersearch` console script cannot satisfy `-S` and is not a
 supported way to run these commands.
 
-Limits. The flag and working-directory checks run before any non-frozen
-import; the remaining checks run inside modules that are already imported.
+Limits. The flag and working-directory checks run before the package's own
+imports, though after the interpreter's own start-up imports; the remaining
+checks run inside modules that are already imported.
 They catch honest launch mistakes. They are not a control against hostile
 files under a launch that does not conform: such a file can run first and
 forge what the checks read. Under the required launch from a checkout whose
@@ -69,7 +70,8 @@ code and still obtain a receipt. A refused launch without `-B` still leaves
 caches behind. Code that imports the package in-process owns its own launch
 boundary. Interpreter startup, the standard library and the filesystem owner
 remain trusted. Unexpected failures inside the command exit 2; failures of
-the interpreter itself, such as a wrong `PYTHONPATH`, exit 1 without output.
+the interpreter itself, such as a wrong `PYTHONPATH`, exit 1 with nothing on
+stdout.
 **Consumers should require the printed `outcome_status`, not the exit code
 alone.**
 

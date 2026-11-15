@@ -50,7 +50,7 @@ software increment, not completion or director effectiveness evidence.
 - Admission refuses any entry named `__pycache__` under the pinned `src` tree
   and any redirected-cache entry for a pinned module.
 - Unexpected failures inside a command exit 2; exit 1 stays a completed
-  refutation. Interpreter-level failures still exit 1 without output, so
+  refutation. Interpreter-level failures still exit 1 with nothing on stdout, so
   consumers should require the printed `outcome_status` as well.
 - These checks catch honest launch mistakes. They do not defend a
   non-conforming launch against hostile files, which can run before them.

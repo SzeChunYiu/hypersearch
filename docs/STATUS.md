@@ -147,10 +147,19 @@ the documented one and the adversary controls only ignored files. It did find:
 
 Third correction (this change): the prefix must be absent or empty; inspect
 mode is refused with a hard exit 2; the flag and working-directory checks run
-in `__main__` before any non-frozen import; site directories and absent
-entries are no longer accepted and the standard-library zip is. Ten regression
-tests: six of the first nine fail against the first correction, eight against
-the unfixed commit.
+in `__main__` before the package's own imports; site directories and absent
+entries are no longer accepted and the standard-library zip is. Eleven
+regression tests. Measured by the reviewer on the ten-test version: eight
+fail against the first correction and three against the second. Against the
+unfixed commit the current test module cannot import; the original five-test
+version failed four of five there.
+
+A third, bounded review of that commit found nothing blocking and four small
+items, fixed here: the phrase "before any non-frozen import" was false (the
+interpreter's own start-up imports precede it, so a hostile file under a
+non-conforming launch can still win); a launch from a deleted working
+directory crashed with exit 1; `--` before the command skipped the early
+check; two statements in this file and the changelog were imprecise.
 
 Limits that remain. The later checks run in already-imported code. They catch
 honest mistakes; they are not a control against hostile files under a launch

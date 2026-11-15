@@ -1,4 +1,4 @@
-"""Module entry point. The launch check runs before any non-frozen import."""
+"""Module entry point. The launch check runs before the package's own imports."""
 import os
 import sys
 
@@ -11,12 +11,15 @@ def _refuse(reason):
     os._exit(2)  # -i or PYTHONINSPECT would otherwise replace this exit code
 
 
-if len(sys.argv) > 1 and sys.argv[1] in _PINNED:
+if next((argument for argument in sys.argv[1:] if argument != "--"), None) in _PINNED:
     if sys.flags.inspect or os.environ.get("PYTHONINSPECT"):
         _refuse("launch without -i or PYTHONINSPECT")
     if not (sys.flags.safe_path and sys.flags.no_site and sys.dont_write_bytecode and sys.pycache_prefix):
         _refuse("launch with -B -S -P -X pycache_prefix=<new empty directory>")
-    _here = os.path.realpath(os.getcwd())
+    try:
+        _here = os.path.realpath(os.getcwd())
+    except OSError:
+        _refuse("working directory is not available")
     _source = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
     if _here != _source and any(os.path.realpath(entry or ".") == _here for entry in sys.path):
         _refuse("import path reaches outside the pinned core and interpreter library")
