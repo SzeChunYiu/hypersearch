@@ -12,6 +12,33 @@ SCHEMAS = {"hypersearch.program-" + name + "/v1" for name in ("manifest", "bundl
 STATUSES = {"PROGRAM_HOLDS", "PROGRAM_FAILS"}
 MAX_OUTPUT_BYTES = 65536
 MAX_ARGUMENT_BYTES = 4096
+MAX_DEPTH = 16
+
+
+def source_text(raw):
+    """Admit plain source only: strict UTF-8, tabs, newlines and printable characters.
+
+    An archive or compiled file under a .py name contains control bytes and is refused here,
+    so what a reviewer reads in the committed file is what runs.
+    """
+    try:
+        text = raw.decode("utf-8")
+    except UnicodeDecodeError as error:
+        raise ValueError("program must be UTF-8 source text") from error
+    if not text.strip() or any((ord(c) < 32 and c not in "\t\n") or ord(c) == 127 for c in text):
+        raise ValueError("program must be nonempty source text without control characters")
+    return text
+
+
+def depth(value):
+    """Nesting depth of a parsed JSON value, without recursion."""
+    deepest, pending = 0, [(value, 1)]
+    while pending:
+        item, level = pending.pop()
+        deepest = max(deepest, level)
+        if type(item) in (list, dict):
+            pending.extend((child, level + 1) for child in (item.values() if type(item) is dict else item))
+    return deepest
 
 
 def validate_bundle(value):
@@ -19,8 +46,9 @@ def validate_bundle(value):
         value, "hypersearch.program-bundle/v1", ("study_manifest", "preregistration", "claim_record", "program"))
     if instrument["verifier"] != VERIFIER:
         raise ValueError("unsupported adapter or verifier")
-    if not artifacts["program"]["path"].endswith(".py") or not raw["program"]:
-        raise ValueError("program must be one nonempty Python source file")
+    if not artifacts["program"]["path"].endswith(".py"):
+        raise ValueError("program must be one Python source file")
+    source_text(raw["program"])
     limits = value["limits"]
     fields(limits, "db_max_attempts timeout_seconds commit_margin_seconds memory_megabytes")
     integer(limits["db_max_attempts"], 1, 2**63 - 1)
@@ -33,7 +61,8 @@ def validate_bundle(value):
     if (question["adapter"] != "pinned-program" or question["claim_type"] != "program-output"
             or question["program_sha256"] != artifacts["program"]["sha256"]
             or question["assumptions_sha256"] != artifacts["preregistration"]["sha256"]
-            or type(question["arguments"]) is not dict or len(encode(question["arguments"])) > MAX_ARGUMENT_BYTES):
+            or type(question["arguments"]) is not dict or depth(question["arguments"]) > MAX_DEPTH
+            or len(encode(question["arguments"])) > MAX_ARGUMENT_BYTES):
         raise ValueError("unsupported question scope")
     manifest = parse(raw["study_manifest"])
     fields(manifest, "schema study_id question limits artifact_sha256")
@@ -80,6 +109,8 @@ def verification(value, bundle):
         raise ValueError("wrong program task binding")
     if type(value["holds"]) is not bool or type(value["summary"]) is not dict:
         raise ValueError("program output must be a truth value and a summary object")
+    if depth(value["summary"]) > MAX_DEPTH:  # deeper values can exhaust the encoder's recursion after the run
+        raise ValueError("program summary is nested too deeply")
     if len(encode(value["summary"])) > MAX_OUTPUT_BYTES:
         raise ValueError("program summary exceeds admitted byte bound")
     return {"status": "PROGRAM_HOLDS" if value["holds"] else "PROGRAM_FAILS", "verification": value}

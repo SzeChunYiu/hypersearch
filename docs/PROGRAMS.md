@@ -14,23 +14,31 @@ example by requiring two independently written programs to agree.
 
 ## What runs
 
-- The program is one Python source file, at most 256 KiB, named in the bundle
-  as the artifact `program` and bound by SHA-256 to the committed file.
+- The program is one Python **source text** file, at most 256 KiB, named in
+  the bundle as the artifact `program` and bound by SHA-256 to the committed
+  file. It must be strict UTF-8 made of printable characters, tabs and
+  newlines. An archive or compiled file under a `.py` name is refused, and
+  the bytes are compiled as source in any case, so what a reviewer reads is
+  what runs. `__file__` is not defined.
 - The instrument writes those bundled bytes into a new empty directory and
-  runs them with `python -B -I -S`: no site packages, no ambient environment
-  (only a default `PATH`), no bytecode, and that directory as the working
-  directory. Only the standard library is importable.
-- The program reads its `arguments` (a JSON object of at most 4 KiB, frozen in
-  the question) from standard input.
+  runs them with `python -B -I -S`: no site packages, none of the caller's
+  environment (a default `PATH`; the interpreter may add its own locale
+  variable), no bytecode, and that directory as the working directory. Only
+  the standard library is importable.
+- The program reads its `arguments` (a frozen JSON object of at most 4 KiB,
+  nested at most 16 deep) from standard input.
 - It must exit 0 and print exactly one JSON object
-  `{"holds": true|false, "summary": {...}}` of at most 64 KiB, with integers,
-  strings, lists, objects, booleans and null only. `holds` is the program's
-  own answer to the preregistered question; `summary` carries the counts the
+  `{"holds": true|false, "summary": {...}}`: at most 64 KiB of standard
+  output including whitespace, at most 64 KiB when re-encoded in ASCII,
+  nested at most 16 deep, with integers (at most 4,300 digits), strings,
+  lists, objects, booleans and null only. `holds` is the program's own
+  answer to the preregistered question; `summary` carries the counts the
   preregistration asks for.
 - Limits: `timeout_seconds` (1..21600), `memory_megabytes` (64..65536, an
   address-space limit), `commit_margin_seconds` (5..60), `db_max_attempts`.
-  Files the program writes are capped at 1 MiB each. On timeout the program
-  and every process it started are killed.
+  A written file is capped at 1 MiB; the number of files is not capped.
+- When the program ends or times out, **its process group is killed**. A
+  process the program deliberately moves out of that group survives.
 
 This is isolation from accidental inputs, **not a security sandbox**. The
 program runs with the operator's file and network access. Run only programs
@@ -39,14 +47,20 @@ from a consumer commit you have reviewed.
 ## Outcomes
 
 `PROGRAM_HOLDS` (exit 0), `PROGRAM_FAILS` (exit 1), `EXECUTION_FAILED` or
-`INCOMPLETE` (exit 2). A non-zero program exit, malformed or oversized output,
-a memory or file limit, or a crash is `EXECUTION_FAILED`; a timeout is
-`INCOMPLETE`. Neither carries a result, and as for studies either completes
-its task: another attempt is a replay or a new bundle.
+`INCOMPLETE` (exit 2). A non-zero program exit, a death by signal, or
+malformed, oversized or too deeply nested output is `EXECUTION_FAILED`; a
+timeout is `INCOMPLETE`. Neither carries a result, and as for studies either
+completes its task: another attempt is a replay or a new bundle. Hitting the
+memory or file limit normally ends the program and so is `EXECUTION_FAILED`,
+but a program that handles the error itself can still finish. Diagnostics of
+a failed run can contain host-specific paths; they are not part of the
+compared outcome.
 
-A replay must reproduce `holds` and `summary` exactly, so a program must be
-deterministic: no clocks, random seeds, hash-order dependence or host details
-in its output.
+A replay must reproduce the recorded outcome exactly, compared by its
+canonical encoding (so `1` and `true` differ). A program must therefore be
+deterministic: no clocks, random seeds, hash-order dependence or host
+details in its output. A differing replay exits 2 with
+`replay_matches_parent: false`.
 
 ## Running one
 
@@ -101,12 +115,24 @@ receipt them at all.
 
 Implemented: the program route, reusing the study executor through its route
 parameter. Author checks on Python 3.11, 3.12 and 3.13 are in the pull
-request. Tests use trivial synthetic programs and cover recording, replay,
-isolation, every malformed output, memory and file limits, timeout with a
-surviving grandchild, closed admission, cross-route refusal and the real
-command line.
+request. Tests use trivial synthetic programs and cover recording, replay and
+replay mismatch, isolation, malformed and too deeply nested output, a
+non-zero exit after valid output, memory and file limits observed from
+inside the program, a timeout with a child in the same process group,
+admission with a re-frozen manifest for each refused field, archives and
+bytecode under a `.py` name, cross-route refusal and the real command line.
 
-Limits. Not a sandbox. The instrument never checks program logic. Determinism
+Review by a separate session started by the author (declared separation, not
+authenticated independence) found four blocking defects in the first
+version, all fixed: a replay differing only as `1` versus `true` was reported
+as matching; deeply nested output crashed the parent after the run and left
+the task open; an archive or bytecode named `.py` ran; and the documentation
+claimed every started process is killed. Identity binding, cross-route
+refusal, the output parser and the other routes held. The fixes were checked
+by the author and CI, not reviewed again.
+
+Limits. Not a sandbox; a process that leaves the group survives. The
+instrument never checks program logic. Determinism
 across interpreter versions is the program author's responsibility and is
 only detected, not ensured, by replay. POSIX only. Independent review, public
 CI and consumer adoption are separate gates. No research executed, no claim

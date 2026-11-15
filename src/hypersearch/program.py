@@ -12,12 +12,17 @@ from . import program_contract as contract
 from . import study
 from .study_json import artifact_bytes, encode, parse
 
+# The bytes are compiled as source text whatever they look like; an archive or bytecode cannot run.
+BOOTSTRAP = ("import sys\n"
+             "exec(compile(open(sys.argv[1], encoding='utf-8').read(), 'program.py', 'exec'), {'__name__': '__main__'})\n")
+
 
 def run_program(bundle, core):
     """Run the bundled program bytes, never the consumer's working file, in an isolated interpreter.
 
     Isolation is from ambient imports, environment and bytecode. It is not a security sandbox:
-    the program runs with the operator's file and network access.
+    the program runs with the operator's file and network access, and a process it moves out of
+    its process group outlives the timeout.
     """
     limits = bundle["limits"]
     memory = limits["memory_megabytes"] * 1048576
@@ -27,11 +32,15 @@ def run_program(bundle, core):
         resource.setrlimit(resource.RLIMIT_FSIZE, (1048576, 1048576))
         resource.setrlimit(resource.RLIMIT_CORE, (0, 0))
 
-    with tempfile.TemporaryDirectory(prefix="hypersearch-program-") as work:
+    raw = artifact_bytes(bundle["artifacts"]["program"])
+    contract.source_text(raw)
+    # A process that left the group can still write here; that must not turn a result into a failure.
+    with tempfile.TemporaryDirectory(prefix="hypersearch-program-", ignore_cleanup_errors=True) as work:
         path = Path(work, "program.py")
-        path.write_bytes(artifact_bytes(bundle["artifacts"]["program"]))
+        path.write_bytes(raw)
         with tempfile.TemporaryFile() as out, tempfile.TemporaryFile() as err:
-            child = subprocess.Popen([sys.executable, "-B", "-I", "-S", str(path)], stdin=subprocess.PIPE, stdout=out,
+            child = subprocess.Popen([sys.executable, "-B", "-I", "-S", "-c", BOOTSTRAP, str(path)],
+                                     stdin=subprocess.PIPE, stdout=out,
                                      stderr=err, cwd=work, env={"PATH": os.defpath}, start_new_session=True,
                                      preexec_fn=confine)
             try:
@@ -40,7 +49,7 @@ def run_program(bundle, core):
                 return {"status": "INCOMPLETE", "verification": None}, "program timeout"
             finally:
                 try:
-                    os.killpg(child.pid, signal.SIGKILL)  # the program and anything it started
+                    os.killpg(child.pid, signal.SIGKILL)  # the program's process group, not what left it
                 except ProcessLookupError:
                     pass
                 child.wait()

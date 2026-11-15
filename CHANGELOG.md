@@ -85,11 +85,14 @@ software increment, not completion or director effectiveness evidence.
   `hypersearch.program-*/v1` schemas. Commands `run-program` and
   `replay-program` run one consumer-committed, hash-bound Python program in an
   isolated interpreter and record its `{"holds", "summary"}` output.
-- The instrument binds the program, its arguments and its limits, kills the
-  program's process group on timeout, and requires a replay to reproduce the
-  output. **It does not check the program's logic**; receipts say
+- The instrument binds the program, its arguments and its limits, admits
+  only source text, kills the program's process group, and requires a replay
+  to reproduce the output. **It does not check the program's logic**; receipts say
   `result_checked_by_instrument: false`.
 - Uses the existing Store, lease, receipt, export and replay path. The
   supplied-witness and census routes are unchanged.
 - Additive development contract. The version changes, so every frozen bundle
   must name 0.7.0 with this commit; existing studies keep their old pins.
+- Replay comparison for every frozen route is now by canonical encoding, so
+  outcomes that differ only as `1` versus `true` no longer match. Typed
+  study and census outcomes are unaffected.
