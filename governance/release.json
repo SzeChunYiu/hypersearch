@@ -1,6 +1,6 @@
 {
   "schema": "hypersearch.release/v1",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "api": "hypersearch.api/v1",
   "status": "development",
   "schemas": [
@@ -12,7 +12,11 @@
     "hypersearch.study-manifest/v1",
     "hypersearch.study-bundle/v1",
     "hypersearch.study-execution/v1",
-    "hypersearch.study-receipt/v1"
+    "hypersearch.study-receipt/v1",
+    "hypersearch.review-bundle/v1",
+    "hypersearch.review-grant/v1",
+    "hypersearch.review-report/v1",
+    "hypersearch.review-receipt/v1"
   ],
   "verifiers": [
     "hypersearch.zero-sum-subsets/v1",

@@ -109,3 +109,10 @@ Hypersearch should expose one research contract to multiple discovery policies. 
 The first implementation should establish a reproducible mathematics example and failure-path tests. Later policies should compete on fixed budgets and tasks using verified-result rate, false acceptance, reproducibility, latency, and cost. Improved prose, more agents, more commits, or more experiments alone do not demonstrate scientific progress.
 
 Before adopting an upstream change, record its precise source version, the capability being borrowed, an acceptance test, resource impact, and rollback condition. Public integration must use public or explicitly cleared material; private deployments can consume the public interfaces without exporting their data, strategies, prompts, or results.
+
+### External report provenance — 2026-11-15
+
+SQLite transaction documentation and W3C PROV-DM informed the adapted
+[review workflow](REVIEWS.md): reuse existing transactional leases, distinguish
+entities/activities/declared contributors, and never equate provenance with truth.
+No new scientific method or PROV implementation conformance is claimed.

@@ -81,3 +81,9 @@ Development 0.3.0 adds run-study and externally digest-bound replay-study, using
 the existing Store and only bundled bounded verifiers. See
 [operation/qualification](docs/STUDIES.md) and [schemas](docs/STUDY_CONTRACT.md).
 Consumer claim authority and promotion holds remain separate.
+
+## Frozen external expert reports
+
+Development 0.4.0 adds registered review tasks, persisted grants before native
+session handoff, and lease-bound authored reports. See [review protocol](docs/REVIEWS.md).
+All report receipts remain NOT_FORMALLY_VERIFIED with no claim authority.

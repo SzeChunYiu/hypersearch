@@ -1,3 +1,4 @@
+from hypersearch import __version__
 import base64
 import copy
 import unittest
@@ -35,7 +36,7 @@ def bundle(multi=False, false=False):
                          "preregistration_sha256": artifacts["preregistration"]["sha256"],
                          "entrypoint": "entry.py", "entrypoint_sha256": digest(b"# fixture\n")},
             "instrument": {"repository": "https://github.com/SzeChunYiu/hypersearch.git",
-                           "commit": "b" * 40, "release_version": "0.3.0", "api": "hypersearch.api/v1",
+                           "commit": "b" * 40, "release_version": __version__, "api": "hypersearch.api/v1",
                            "verifier": "hypersearch.multiwise-subsets/v1" if multi else "hypersearch.zero-sum-subsets/v1",
                            "source_sha256": {"src/hypersearch/cli.py": "c" * 64}},
             "question": question, "artifacts": artifacts, "limits": limits}

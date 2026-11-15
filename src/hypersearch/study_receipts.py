@@ -43,8 +43,8 @@ def trusted_receipt(raw, expected_digest):
     return validate_receipt(parse(raw, MAX_RECEIPT_BYTES))
 
 
-def export_receipt(value, directory):
-    validate_receipt(value)
+def export_receipt(value, directory, *, validator=validate_receipt):
+    validator(value)
     raw = encode(value)
     directory = Path(directory)
     directory.mkdir(exist_ok=True)
