@@ -13,16 +13,18 @@ The consumer and core must be distinct clean Git checkouts. Sources, inputs and
 protocol are frozen before registration. Database and exports live outside both.
 
 ```sh
-run() { python -B -S -X pycache_prefix="$(mktemp -d)" -m hypersearch "$@"; }
+CACHE=$(mktemp -d)  # private and empty
+run() { PYTHONPATH=src python -B -S -P -X pycache_prefix="$CACHE" -m hypersearch "$@"; }
 run register-review --bundle bundle.json \
   --consumer-root consumer --db reviews.sqlite --export receipts
 run grant-review --bundle bundle.json \
   --consumer-root consumer --db reviews.sqlite --export receipts > grant.json
 ```
 
-Every command uses a private empty bytecode prefix: source pins do not bind an
-ignored cache that the interpreter would load instead. Admission also refuses
-any cache for the pinned core; see [executed code](STUDIES.md#executed-code-not-only-source-bytes).
+Run from the core checkout root. These flags are required and any other launch
+is refused: source pins do not bind an ignored cache or an earlier import-path
+entry that the interpreter would load instead. See
+[executed code](STUDIES.md#executed-code-not-only-source-bytes).
 
 Only after a successful persisted grant may the orchestrator dispatch an
 already authorized native expert session with the frozen bundle and grant.

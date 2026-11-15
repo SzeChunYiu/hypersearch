@@ -1,7 +1,8 @@
-"""Ignored bytecode caches must never stand in for hash-pinned source.
+"""Ignored bytecode and ambient import paths must never stand in for pinned source.
 
-Source hashes bind files, not the code an interpreter loads: an ignored cache is
-invisible to `git status` yet eligible for import. Fixtures are synthetic.
+Source hashes bind files, not the code an interpreter loads: an ignored cache or
+a module found earlier on the import path is invisible to `git status` yet
+eligible for import. Fixtures are synthetic.
 """
 import json
 import os
@@ -16,7 +17,7 @@ import unittest
 from hypersearch.study import run_verifier
 from hypersearch.study_json import encode
 from review_fixture import fixture
-from study_fixture import git, make
+from study_fixture import git, launch, make
 
 TAG = sys.implementation.cache_tag
 # Behaviour-preserving: proves only which bytes executed.
@@ -54,10 +55,10 @@ def poison(core, module, addition, stale=False, prefix=None):
         target.write_bytes(bytes(raw))
 
 
-def command(core, *arguments, flags=("-B", "-S")):
+def command(core, *arguments, flags, cwd=None, path=None):
     return subprocess.run([sys.executable, *flags, "-m", "hypersearch", *map(str, arguments)],
-                          env={"PATH": os.defpath, "PYTHONPATH": str(core / "src"), "PYTHONDONTWRITEBYTECODE": "1"},
-                          capture_output=True, text=True, timeout=90)
+                          env={"PATH": os.defpath, "PYTHONPATH": str(path or core / "src")},
+                          cwd=cwd, capture_output=True, text=True, timeout=90)
 
 
 class BytecodeBoundaryTests(unittest.TestCase):
@@ -65,12 +66,20 @@ class BytecodeBoundaryTests(unittest.TestCase):
         self.temp = tempfile.TemporaryDirectory(); self.addCleanup(self.temp.cleanup)
         self.root = Path(self.temp.name)
         self.marker = self.root / "marker"
+        self.safe = launch(self.root / "private-cache")
 
-    def study(self, core, consumer, bundle, name, flags=("-B", "-S")):
+    def study(self, core, consumer, bundle, name, flags=None, **launch_options):
         source = self.root / "bundle.json"; source.write_bytes(encode(bundle))
         result = command(core, "run-study", "--bundle", source, "--consumer-root", consumer,
-                         "--db", self.root / (name + ".sqlite"), "--export", self.root / name, flags=flags)
+                         "--db", self.root / (name + ".sqlite"), "--export", self.root / name,
+                         flags=self.safe if flags is None else flags, **launch_options)
         return result, [p.name for p in (self.root / (name + ".sqlite"), self.root / name) if p.exists()]
+
+    def refused(self, outcome, reason):
+        result, effects = outcome
+        self.assertEqual(result.returncode, 2, result.stdout + result.stderr)
+        self.assertIn(reason, result.stderr)
+        self.assertEqual(effects, [])
 
     def test_false_witness_is_never_receipted_verified_from_cached_code(self):
         core, consumer, bundle = make(self.root, multi=True, false=True)
@@ -79,45 +88,74 @@ class BytecodeBoundaryTests(unittest.TestCase):
         for index, stale in enumerate((False, True)):
             poison(core, "study_outcomes", FLIP, stale=stale)
             self.assertEqual(git(core, "status", "--porcelain", "--untracked-files=all"), "")
-            result, effects = self.study(core, consumer, bundle, f"poisoned-{index}")
-            self.assertEqual(result.returncode, 2, result.stdout)
-            self.assertIn("bytecode cache", result.stderr)
-            self.assertEqual(effects, [])
+            # The launch that used to read this cache, and the required one, both refuse.
+            self.refused(self.study(core, consumer, bundle, f"legacy-{index}", flags=("-B", "-S")), "launch with")
+            self.refused(self.study(core, consumer, bundle, f"poisoned-{index}"), "bytecode cache")
             shutil.rmtree(core / "src/hypersearch/__pycache__")
         result, _ = self.study(core, consumer, bundle, "restored")
         self.assertEqual(result.returncode, 1, result.stderr)
 
-    def test_private_prefix_launch_never_executes_adjacent_cache(self):
+    def test_required_launch_never_executes_adjacent_cache(self):
         core, consumer, bundle = make(self.root)
-        for module in ("__init__", "cli", "study", "study_paths", "study_outcomes", "store"):
+        for module in ("__init__", "__main__", "cli", "study", "study_paths", "study_outcomes", "store"):
             poison(core, module, MARK.format(marker=str(self.marker)))
-        private = self.root / "private-cache"
-        result, effects = self.study(core, consumer, bundle, "hardened",
-                                     flags=("-B", "-S", "-X", f"pycache_prefix={private}"))
-        self.assertEqual(result.returncode, 2)       # an unclean checkout is still refused,
-        self.assertIn("bytecode cache", result.stderr)
-        self.assertFalse(self.marker.exists())       # and none of its cached code ever ran,
-        self.assertEqual(effects, [])                # including the gate's own module.
+        self.refused(self.study(core, consumer, bundle, "hardened"), "bytecode cache")
+        self.assertFalse(self.marker.exists())  # not even the gate's own module ran from cache
+
+    def test_every_part_of_the_launch_contract_is_required(self):
+        core, consumer, bundle = make(self.root)
+        private = f"pycache_prefix={self.root / 'private-cache'}"
+        for index, flags in enumerate((("-S", "-P", "-X", private), ("-B", "-P", "-X", private),
+                                       ("-B", "-S", "-X", private), ("-B", "-S", "-P"))):
+            self.refused(self.study(core, consumer, bundle, f"partial-{index}", flags=flags), "launch with")
+            shutil.rmtree(core / "src/hypersearch/__pycache__", ignore_errors=True)  # written when -B is absent
+
+    def test_working_directory_and_alias_paths_cannot_supply_modules(self):
+        core, consumer, bundle = make(self.root, multi=True, false=True)
+        cwd = self.root / "cwd"; cwd.mkdir()
+        shadow = cwd / "argparse.py"   # a standard-library name in the launch directory
+        shadow.write_text(f"open({str(self.marker)!r}, 'a').write('shadow')\nraise SystemExit(0)\n")
+        py_compile.compile(str(shadow), cfile=str(cwd / "argparse.pyc"), doraise=True); shadow.unlink()
+        result, _ = self.study(core, consumer, bundle, "shadow", cwd=cwd)
+        self.assertEqual((result.returncode, self.marker.exists()), (1, False), result.stderr)
+        alias = self.root / "alias"; alias.mkdir()
+        (alias / "hypersearch").symlink_to(core / "src/hypersearch", target_is_directory=True)
+        self.refused(self.study(core, consumer, bundle, "alias-run", path=alias), "import path")
 
     def test_populated_redirected_cache_is_refused(self):
         core, consumer, bundle = make(self.root)
         prefix = self.root / "shared-cache"
         poison(core, "study_outcomes", MARK.format(marker=str(self.marker)), prefix=prefix)
-        result, effects = self.study(core, consumer, bundle, "redirected",
-                                     flags=("-B", "-S", "-X", f"pycache_prefix={prefix}"))
-        self.assertEqual(result.returncode, 2)
-        self.assertIn("redirected bytecode cache", result.stderr)
-        self.assertEqual(effects, [])
+        self.refused(self.study(core, consumer, bundle, "redirected", flags=launch(prefix)), "redirected bytecode cache")
+
+    def test_any_entry_named_pycache_is_refused(self):
+        core, consumer, bundle = make(self.root)
+        cache = core / "src/hypersearch/__pycache__"
+        cache.mkdir()
+        self.refused(self.study(core, consumer, bundle, "empty-directory"), "bytecode cache")
+        os.mkfifo(cache / f"study_outcomes.{TAG}.pyc")   # not a regular file; never opened
+        self.refused(self.study(core, consumer, bundle, "pipe"), "bytecode cache")
+        shutil.rmtree(cache); cache.write_text("not a directory")
+        Path(core, ".git/info/exclude").write_text("__pycache__\n")
+        self.refused(self.study(core, consumer, bundle, "plain-file"), "bytecode cache")
 
     def test_review_route_refuses_cached_code_before_registration(self):
         core, consumer, value = fixture(self.root)
         poison(core, "review_contract", MARK.format(marker=str(self.marker)))
         source = self.root / "review.json"; source.write_bytes(encode(value))
-        result = command(core, "register-review", "--bundle", source, "--consumer-root", consumer,
-                         "--db", self.root / "reviews.sqlite", "--export", self.root / "reviews")
-        self.assertEqual(result.returncode, 2)
-        self.assertIn("bytecode cache", result.stderr)
-        self.assertFalse((self.root / "reviews.sqlite").exists())
+        arguments = ("register-review", "--bundle", source, "--consumer-root", consumer,
+                     "--db", self.root / "reviews.sqlite", "--export", self.root / "reviews")
+        for flags, reason in ((self.safe, "bytecode cache"), (("-B", "-S"), "launch with")):
+            result = command(core, *arguments, flags=flags)
+            self.assertEqual(result.returncode, 2)
+            self.assertIn(reason, result.stderr)
+            self.assertFalse((self.root / "reviews.sqlite").exists())
+
+    def test_crash_never_exits_as_a_refutation(self):
+        core, consumer, bundle = make(self.root)
+        (core / "src/hypersearch/study_receipts.py").write_text("raise RuntimeError('synthetic crash')\n")
+        result, effects = self.study(core, consumer, bundle, "crash")
+        self.assertEqual((result.returncode, effects), (2, []), result.stderr)
 
     def test_verifier_child_ignores_adjacent_cache(self):
         core, _, bundle = make(self.root, multi=True, false=True)

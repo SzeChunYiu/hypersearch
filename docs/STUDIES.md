@@ -16,7 +16,7 @@ See [schemas](STUDY_CONTRACT.md) and
 
 ```sh
 CACHE=$(mktemp -d)  # private and empty; never a reused or shared cache directory
-PYTHONPATH=src python -B -S -X pycache_prefix="$CACHE" -m hypersearch run-study \
+PYTHONPATH=src python -B -S -P -X pycache_prefix="$CACHE" -m hypersearch run-study \
   --bundle /outside-source/bundle.json --consumer-root /pinned-consumer \
   --db /outside-source/tasks.sqlite --export /outside-source/receipts
 ```
@@ -29,21 +29,39 @@ bundled verifiers; inputs cannot choose modules, callbacks or commands.
 
 ## Executed code, not only source bytes
 
-Source hashes bind files, not what the interpreter loads. An ignored
-`__pycache__` entry is invisible to `git status`, and an unchecked-hash cache,
-or a stale one whose recorded mtime/size still match, is imported in place of
-the pinned file. Disabling bytecode writes does not disable reads. Admission
-therefore refuses any file under `__pycache__` in the core `src` tree and any
-redirected-cache entry for a pinned module, before Store construction. Remove
-caches left by earlier local runs; a consumer checkout must be clean including
-ignored files.
+Source hashes bind files, not what the interpreter loads. Two things can put
+other code in front of a pinned module while `git status` stays clean:
 
-That check runs inside modules that were already imported, so it cannot
-authenticate itself: a deliberately replaced cache of an admission module still
-defeats a launch that reads adjacent caches. The launch above is the control.
-With a private empty `pycache_prefix` and `-B`, no adjacent cache is consulted
-and none is written. The verifier child already runs this way. Interpreter
-startup, the standard library and the filesystem owner remain trusted.
+- **A bytecode cache.** An ignored `__pycache__` entry that is unchecked-hash,
+  or stale with a recorded mtime/size that still match, is imported in place of
+  the pinned file. Disabling bytecode writes does not disable reads.
+- **The import path.** `python -m` puts the working directory first, so an
+  ignored standard-library-named file there is imported before the real one;
+  site directories and ambient `PYTHONPATH` entries can do the same.
+
+The study and review commands therefore **require** the launch shown above and
+refuse anything else before any effect:
+
+| Flag | Refused without it because |
+|---|---|
+| `-P` | the working directory would be on the import path |
+| `-S` | site directories and their startup hooks would be loaded |
+| `-B` | the run would write caches into the checkout |
+| `-X pycache_prefix=<new empty directory>` | adjacent caches would be consulted |
+
+Every import-path entry must then be the pinned `src`, the interpreter's own
+library, or absent. Admission also refuses any entry named `__pycache__` under
+the core `src` tree, whatever its type, and any redirected-cache entry for a
+pinned module. A checkout that has run the unit tests or the demo without `-B`
+holds such caches; delete them first.
+
+Limits. These checks run inside modules that are already imported, so they
+cannot authenticate themselves: a launch that reads adjacent caches can be
+handed a replaced admission module. The required launch is what prevents that,
+and a launch chosen by an adversary is outside this contract. Code that imports
+the package in-process, instead of using these commands, owns its own launch
+boundary. Interpreter startup, the standard library and the filesystem owner
+remain trusted. An unexpected failure exits 2, never 1.
 
 ## One effect-admission boundary
 
@@ -77,7 +95,7 @@ export. Corrupt files or task/result identity/fence mismatches fail, never rewri
 ## Replay and upgrade
 
 ```sh
-PYTHONPATH=src python -B -S -X pycache_prefix="$(mktemp -d)" -m hypersearch replay-study \
+PYTHONPATH=src python -B -S -P -X pycache_prefix="$CACHE" -m hypersearch replay-study \
   --receipt /outside-source/receipts/PREVIOUS.json \
   --expected-receipt-sha256 EXTERNALLY_COMMITTED_DIGEST --replay-id replay-2 \
   --consumer-root /pinned-consumer --db /outside-source/tasks.sqlite \

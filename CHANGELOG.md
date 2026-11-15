@@ -38,14 +38,20 @@ No existing study/review schema or verifier changes. Exact pins remain required;
 existing studies retain their original evaluator. This is an initial issue #16
 software increment, not completion or director effectiveness evidence.
 
-## 0.5.0 development — executed-bytecode admission correction
+## 0.5.0 development — executed-code admission correction
 
-- Study and review admission refuse any bytecode cache for the pinned core:
-  files under `__pycache__` in `src`, and redirected-prefix entries for pinned
-  modules. Previously an ignored cache executed while source hashes passed, and
-  a false witness could be committed and exported as VERIFIED_WITNESS.
-- Documented launches use `-B` with a private empty `pycache_prefix`. The
-  in-process check cannot authenticate modules imported before it runs.
+- Study and review commands refuse any launch other than
+  `-B -S -P -X pycache_prefix=<new empty directory>`, and any import-path entry
+  that is not the pinned `src` or the interpreter's own library. Previously an
+  ignored cache, or an ignored standard-library-named file in the launch
+  directory, executed while source hashes passed, and a false witness could be
+  committed and exported as VERIFIED_WITNESS.
+- Admission refuses any entry named `__pycache__` under the pinned `src` tree
+  and any redirected-cache entry for a pinned module.
+- An unexpected failure exits 2. Exit 1 is reserved for a completed refutation.
+- **Consumer migration:** a consumer that launches these commands must add
+  `-P`. A core checkout holding caches, including ones written by running the
+  tests or demo without `-B`, is refused until they are deleted. In-process
+  callers are not subject to the launch contract and own their own boundary.
 - No schema, verifier, API or version change; the exact commit identifies the
-  instrument. Consumers adopt through a pin PR with their own cache controls.
-  A checkout holding caches from earlier local runs is now refused until cleaned.
+  instrument. Adoption is a consumer pin PR with that consumer's own controls.

@@ -16,7 +16,7 @@ The provided Davenport adapter is a source-checkout conformance route using bund
 
 1. Run consumer registry/archive integrity checks before research. Missing archived evidence is a failure, not a metadata-only pass.
 2. Run pinned clean-checkout smoke and replay its result with the declared group.
-3. Exercise wrong pin, dirty source, stale/unchecked bytecode cache, wrong origin, missing/incompatible manifest and wrong task refusal. Launch through a private empty cache prefix; test imports that occur before the consumer's own gates.
+3. Exercise wrong pin, dirty source, stale/unchecked bytecode cache, wrong origin, missing/incompatible manifest and wrong task refusal. Use the required launch (`-B -S -P` and a private empty cache prefix); test imports that occur before the consumer's own gates, and shadows in the launch directory.
 4. Record exact upstream and consumer commit, commands, runtime, output digest, limitations and reviewer lineage.
 5. Test an explicit pin transition and rollback using frozen fixtures; leave existing studies pinned.
 6. Review and merge the adoption PR under consumer rules. Experimental smoke may be enabled while theorem promotion remains on HOLD.

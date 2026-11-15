@@ -8,11 +8,11 @@ import unittest
 
 from hypersearch.study_json import encode
 from hypersearch.store import Store
-from study_fixture import make
+from study_fixture import launch, make
 
 
 def command(core, *arguments):
-    return subprocess.run([sys.executable, "-B", "-S", "-m", "hypersearch", *map(str, arguments)],
+    return subprocess.run([sys.executable, *launch(core.parent / "private-cache"), "-m", "hypersearch", *map(str, arguments)],
                           env={"PATH": os.defpath, "PYTHONPATH": str(core / "src"),
                                "PYTHONDONTWRITEBYTECODE": "1"},
                           capture_output=True, text=True, timeout=90)
