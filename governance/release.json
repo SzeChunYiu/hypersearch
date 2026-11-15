@@ -1,6 +1,6 @@
 {
   "schema": "hypersearch.release/v1",
-  "version": "0.6.0",
+  "version": "0.7.0",
   "api": "hypersearch.api/v1",
   "status": "development",
   "schemas": [
@@ -23,11 +23,16 @@
     "hypersearch.census-manifest/v1",
     "hypersearch.census-bundle/v1",
     "hypersearch.census-execution/v1",
-    "hypersearch.census-receipt/v1"
+    "hypersearch.census-receipt/v1",
+    "hypersearch.program-manifest/v1",
+    "hypersearch.program-bundle/v1",
+    "hypersearch.program-execution/v1",
+    "hypersearch.program-receipt/v1"
   ],
   "verifiers": [
     "hypersearch.zero-sum-subsets/v1",
     "hypersearch.multiwise-subsets/v1",
-    "hypersearch.zero-sum-census/v1"
+    "hypersearch.zero-sum-census/v1",
+    "hypersearch.pinned-program/v1"
   ]
 }

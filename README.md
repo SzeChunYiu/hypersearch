@@ -99,3 +99,10 @@ calibrated VOI, scientific acceptance or evidence of optimal allocation.
 sequences of a given length over a small group that avoid zero-sums of chosen
 lengths. See [census tasks](docs/CENSUS.md). A count of zero is one
 implementation's finite computation, not a proof.
+
+## Pinned-program tasks — 0.7.0 development
+
+`run-program` runs one program committed by the consumer, bound by hash, in an
+isolated interpreter under the same frozen route, and records its small JSON
+output with a receipt and a replay. The instrument does not check the
+program's logic. See [pinned programs](docs/PROGRAMS.md).

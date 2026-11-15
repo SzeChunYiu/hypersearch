@@ -60,8 +60,8 @@ def main(argv=None):
     status = sub.add_parser("status", help="inspect raw queue state (not certification)")
     status.add_argument("--db", required=True)
     status.add_argument("--budget", type=int, default=100)
-    for name in ("run-study", "replay-study", "run-census", "replay-census"):
-        study = sub.add_parser(name, help="execute a frozen bounded supplied-certificate or exhaustive-census task")
+    for name in ("run-study", "replay-study", "run-census", "replay-census", "run-program", "replay-program"):
+        study = sub.add_parser(name, help="execute a frozen supplied-certificate, exhaustive-census or pinned-program task")
         study.add_argument("--consumer-root", required=True)
         study.add_argument("--db", required=True)
         study.add_argument("--export", required=True)
@@ -75,7 +75,7 @@ def main(argv=None):
     review_arguments(sub)
     args = parser.parse_args(argv)
     try:
-        if args.command.endswith(("-review", "-study", "-census")):
+        if args.command.endswith(("-review", "-study", "-census", "-program")):
             from .study_paths import launch_boundary
             launch_boundary(Path(__file__).resolve().parents[2])
         if args.command.endswith("-review"):
@@ -87,6 +87,9 @@ def main(argv=None):
         if args.command in ("run-census", "replay-census"):
             from .census import main as census_main
             return census_main(args)
+        if args.command in ("run-program", "replay-program"):
+            from .program import main as program_main
+            return program_main(args)
         if args.command in ("verify", "verify-multiwise"):
             path = Path(args.certificate)
             if path.stat().st_size > 65536:

@@ -2,7 +2,7 @@
 import os
 import sys
 
-_PINNED = {"run-study", "replay-study", "run-census", "replay-census",
+_PINNED = {"run-study", "replay-study", "run-census", "replay-census", "run-program", "replay-program",
            "register-review", "grant-review", "submit-review", "recover-review"}
 
 
