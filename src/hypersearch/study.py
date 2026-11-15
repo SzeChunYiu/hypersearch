@@ -110,7 +110,8 @@ def execute(execution, *, consumer_root, database, export, inputs=(), parent_rec
                            "core_commit": bundle["instrument"]["commit"],
                            "elapsed_ms": int((time.monotonic() - started) * 1000)},
                "diagnostics": diagnostics,
-               "replay_matches_parent": None if parent_receipt is None else result == parent_receipt["outcome"]}
+               "replay_matches_parent": (None if parent_receipt is None  # by encoding: 1 == True in Python
+                                         else encode(result) == encode(parent_receipt["outcome"]))}
     route.validate_receipt(receipt)
     # Stale/expired completion raises; nothing is exported before the commit.
     result_digest = store.complete(lease, receipt)

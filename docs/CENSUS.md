@@ -105,3 +105,32 @@ a new bundle.
 
 Consumer adoption is a separate pin PR with that consumer's own conformance,
 refusal and rollback evidence. Existing studies keep their pins.
+
+## Status — 2026-11-15
+
+Motivation: the supplied-witness route takes one certificate per task and
+cannot express an upper bound or an exhaustive family. A consumer needed
+statements of the form "no sequence of length n avoids zero-sums of these
+lengths".
+
+Implemented: one census verifier and a census route that reuses the study
+executor through a route parameter, so the Store, lease, fenced completion,
+receipt export and replay logic exists once. The study executor's refactor is
+covered by the unchanged existing tests.
+
+Author checks on Python 3.11, 3.12 and 3.13: counts in the pull request. The
+verifier agrees with a brute-force oracle on thirteen small cases and
+reproduces D(C_3^2) = 5, eta(C_3^2) = 7, eta(C_2^3) = 8, D(C_4^2) = 7 and
+D(C_5) = 5. A census of order-27 scale (C_3 x C_9, length 12) walked about
+25 million nodes in 30 seconds. Only synthetic fixtures and these small groups
+were run; no consumer research question was computed here.
+
+Review by a separate session started by the author (declared separation, not
+authenticated independence): 13,089 comparisons of count, profile and example
+against two other algorithms, no mismatch; four non-blocking findings, all
+addressed (parent profile and standard-sequence checks, one cached example
+recheck with a 5-second minimum margin, boundary tests, documentation).
+
+Limits. One implementation. A count of zero above the standard sequence's
+length is not independently checked. No formal proof. Public CI and consumer
+adoption are separate gates. No research executed, no claim promoted.
