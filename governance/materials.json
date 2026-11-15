@@ -86,6 +86,12 @@
       "lifecycle": "active"
     },
     {
+      "path": "docs/IMPROVEMENTS.md",
+      "owner": "documentation-maintainers",
+      "role": "documentation",
+      "lifecycle": "experimental"
+    },
+    {
       "path": "docs/LITERATURE.md",
       "owner": "documentation-maintainers",
       "role": "documentation",
@@ -248,6 +254,12 @@
       "lifecycle": "active"
     },
     {
+      "path": "src/hypersearch/improvement.py",
+      "owner": "core-maintainers",
+      "role": "code",
+      "lifecycle": "experimental"
+    },
+    {
       "path": "src/hypersearch/math_adapter.py",
       "owner": "core-maintainers",
       "role": "code",
@@ -396,6 +408,12 @@
       "owner": "quality-maintainers",
       "role": "test",
       "lifecycle": "active"
+    },
+    {
+      "path": "tests/test_improvement.py",
+      "owner": "quality-maintainers",
+      "role": "test",
+      "lifecycle": "experimental"
     },
     {
       "path": "tests/test_math_adapter.py",

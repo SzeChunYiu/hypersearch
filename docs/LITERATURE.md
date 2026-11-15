@@ -124,3 +124,27 @@ routing and a finite synthetic VOI comparison. This increment reuses no source
 code or scientific efficacy claim. It adds baseline interface conformance only;
 primary methodological review and a frozen evaluation remain prerequisites for
 research comparisons. Seeded hash ordering makes no uniform-randomness claim.
+
+## Frozen improvement evaluation — consulted 2026-11-15
+
+- NIST, *Practices for Automated Benchmark Evaluations of Language Models*,
+  NIST AI 800-2 Initial Public Draft (2026),
+  [DOI 10.6028/NIST.AI.800-2.ipd](https://doi.org/10.6028/NIST.AI.800-2.ipd).
+  Its separation of measurement target, protocol execution, analysis and
+  qualified reporting motivates a frozen plan and a result with no promotion
+  authority. This draft is guidance, not a validation of Hypersearch.
+- Dwork et al., *Generalization in Adaptive Data Analysis and Holdout Reuse*,
+  [arXiv:1506.02629](https://arxiv.org/abs/1506.02629). Repeated adaptive access
+  can overfit a holdout. The finite-suite gate therefore does not claim a
+  generalization result; protected-family and adaptive-access controls remain a
+  Phase 6 blocker.
+- ACM SIGMOD Availability & Reproducibility Initiative,
+  [process and packaging guidance](https://reproducibility.sigmodconf.hosting.acm.org/).
+  Its distinction between artifact availability and independently reproduced
+  results informs the separate implemented/tested/reviewed/deployed labels.
+
+The resulting 0.8.0 instrument adopts only a closed, preregistered comparison:
+exact sources, all cases, matched reported budget, positive threshold and a
+no-benefit control. It does not implement statistical uncertainty, independent
+cost measurement, an untouched holdout, independent reproduction or release
+promotion.
