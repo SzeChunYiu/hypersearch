@@ -100,11 +100,36 @@ class DirectorTests(unittest.TestCase):
         obs = fixture()
         for row in obs["candidates"]:
             row["declared_gain"] = -1
-        self.assertEqual(json.loads(call(obs))["action"], "stop")
+        self.assertEqual(json.loads(call(obs, "declared-gain-cost/v1"))["action"], "stop")
         obs["candidates"] = []
         self.assertEqual(json.loads(call(obs))["action"], "stop")
         obs["gate"]["hold"] = "active"
         self.assertEqual(json.loads(call(obs))["action"], "defer")
+
+    def test_exploration_can_select_nonpositive_prerequisite(self):
+        for gain in (0, -1):
+            obs = fixture()
+            obs["candidates"] = [obs["candidates"][0]]
+            obs["candidates"][0]["declared_gain"] = gain
+            for policy in ("supplied-order/v1", "seeded-hash-order/v1"):
+                result = json.loads(call(obs, policy))
+                self.assertEqual(result["action"], "recommend")
+                self.assertEqual(result["selected_candidate_id"], "b")
+                self.assertEqual(result["excluded"], [])
+                self.assertEqual(result["legal_candidate_ids"], ["b"])
+            greedy = json.loads(call(obs, "declared-gain-cost/v1"))
+            self.assertEqual(greedy["action"], "stop")
+            self.assertEqual(greedy["legal_candidate_ids"], ["b"])
+            self.assertEqual(greedy["excluded"], [])
+            self.assertEqual(greedy["policy_skipped"], [
+                {"candidate_id": "b", "reason": "greedy_nonpositive_declared_gain"}])
+
+    def test_duplicate_task_under_distinct_candidate_ids_refuses(self):
+        obs = fixture()
+        obs["candidates"][1]["task_sha256"] = obs["candidates"][0]["task_sha256"]
+        for policy in ("supplied-order/v1", "declared-gain-cost/v1", "seeded-hash-order/v1"):
+            with self.assertRaisesRegex(ValueError, "duplicate frozen task"):
+                call(obs, policy)
 
     def test_numeric_and_cost_refusals(self):
         for value in (True, 1.5, float("inf"), float("nan"), 10**12 + 1):

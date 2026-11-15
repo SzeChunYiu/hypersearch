@@ -43,6 +43,7 @@ def observation(raw):
     if type(rows) is not list or len(rows) > 1000:
         raise ValueError("candidates must be a bounded array")
     seen = set()
+    tasks = set()
     for row in rows:
         fields(row, "candidate_id task_sha256 declared_gain declared_cost gate")
         text(row["candidate_id"])
@@ -50,6 +51,9 @@ def observation(raw):
             raise ValueError("duplicate candidate identity")
         seen.add(row["candidate_id"])
         sha(row["task_sha256"])
+        if row["task_sha256"] in tasks:
+            raise ValueError("duplicate frozen task identity")
+        tasks.add(row["task_sha256"])
         integer(row["declared_gain"], -(10**12), 10**12)
         fields(row["declared_cost"], " ".join(COSTS))
         for cost in row["declared_cost"].values():

@@ -79,7 +79,7 @@ filesystem effects or provider calls. Declared gain/cost values are hypothetical
 seeded hash order is not an exactly uniform random baseline. No optimality,
 calibrated VOI, scientific efficacy or autonomous execution is established.
 
-Author checks on Python 3.12.14: 85 tests passed (76 existing, 9 new director
+Author checks on Python 3.12.14: 87 tests passed (76 existing, 11 new director
 conformance tests), local governance passed, fresh README demo and bounded
 multiwise example passed. Only synthetic/known-answer software fixtures ran.
 Existing study/review code and tests are unchanged. Independent review, public CI
@@ -87,3 +87,13 @@ and any consumer adoption remain pending. Original frozen evaluator pins persist
 
 See [director contract](DIRECTOR.md) and [design alternatives](DIRECTOR_DESIGN.md).
 No research HOLD changes; issue #16 remains open for separately specified work.
+
+### Pre-merge policy correction
+
+Author candidate da28c40 is superseded: shared positive-gain filtering had
+prevented exploratory policies from selecting zero-immediate-gain prerequisites.
+Legality now depends only on snapshot gates. Supplied/hash order may select any
+legal declared gain; greedy ratio explicitly skips nonpositive gain.
+Duplicate frozen task digests refuse even under distinct candidate IDs.
+Costs are explicitly potentially incomplete declared estimates, not measured totals.
+The corrected synthetic prerequisite and duplicate-task controls pass.

@@ -17,10 +17,13 @@ Choose option 1 for this increment. No execution integration.
 
 Closed observation, policy and recommendation schemas at v1. Observation names
 consumer commit, shared declared gain/cost units and snapshot gates. Candidate
-identity binds a frozen task digest. Integer costs explicitly declare execution,
+identity uniquely binds a frozen task digest. Integer costs explicitly declare execution,
 verification, coordination and recovery in one comparable declared unit.
 Missing/negative components or nonpositive totals refuse. Syntactic completeness
-does not prove real costs were fully anticipated.
+does not prove real costs were fully anticipated. Execution includes planning,
+generation, training and computation; verification covers checking; coordination
+covers communication/selection; recovery covers expected retry/reconciliation.
+All are declared, potentially incomplete estimates, not measured full costs.
 
 Policies are supplied order, exact rational declared gain/total cost, or seeded
 SHA256 order. This last baseline is reproducible hash ordering, not a theorem of
@@ -29,9 +32,11 @@ Exact finite optimal comparison needs a separately specified future model.
 There is no learned prior, calibrated VOI, scientific reward or optimality claim.
 
 Permission allowed/pending/denied/revoked, HOLD active/clear, and dependency
-ready/pending/revoked are distinct. Only all-clear positive-gain candidates are
-ranked. Blocked positive candidates defer if none can be recommended. A global
-block defers even with no candidates. Otherwise no positive candidates stops.
+ready/pending/revoked are distinct. All-clear candidates are legal regardless of declared gain. Supplied/hash order
+can select legal zero/negative-gain prerequisites. Only the greedy ratio policy
+skips nonpositive gain; if it has legal candidates but none positive, it stops.
+When no legal candidates exist, blocked candidates defer; an empty list stops.
+A global block defers even with no candidates.
 These are baseline policy assumptions; stop is not scientific closure and defer
 does not schedule a retry or imply that permission will return.
 
