@@ -112,6 +112,12 @@ lower bound for that limit, not a setting. Details are in
 A family's receipts can be re-verified afterwards, and held against outcomes
 registered before the run, with [`check-export`](CHECK_EXPORT.md).
 
+An ignored SIGCHLD, which a launcher can pass on across `exec`, would let
+the kernel discard the program's exit status. The command line restores the
+default before anything runs. A library caller that ignores SIGCHLD gets
+`EXECUTION_FAILED` for a program whose status was lost, and `INCOMPLETE`
+for a timeout; a lost status is never read as exit 0.
+
 ## Schemas
 
 All closed, with the strict JSON encoding of the study schemas.

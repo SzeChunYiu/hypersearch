@@ -428,6 +428,12 @@
       "lifecycle": "experimental"
     },
     {
+      "path": "tests/test_export_releases.py",
+      "owner": "quality-maintainers",
+      "role": "test",
+      "lifecycle": "experimental"
+    },
+    {
       "path": "tests/test_governance.py",
       "owner": "quality-maintainers",
       "role": "test",
@@ -447,6 +453,12 @@
     },
     {
       "path": "tests/test_program.py",
+      "owner": "quality-maintainers",
+      "role": "test",
+      "lifecycle": "experimental"
+    },
+    {
+      "path": "tests/test_program_reaping.py",
       "owner": "quality-maintainers",
       "role": "test",
       "lifecycle": "experimental"

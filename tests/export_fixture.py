@@ -53,6 +53,24 @@ def forged(raw, route=None, **changes):
     return encode(route.validate_receipt(value))
 
 
+def released(pair, version, route=None):
+    """An original and its replay as a release that differs only in its version wrote them.
+
+    Validators unchanged but for the version string are what check-export reads for EARLIER releases. The
+    rewrite changes the version, the identities derived from it and the replay's parent digest, nothing
+    else; with the package's version patched to that release, its own validators accept the result.
+    """
+    route = route or program_route()
+    with patch("hypersearch.study_contract.__version__", version):
+        original = parse(pair[0], len(pair[0]))
+        original["execution"]["bundle"]["instrument"]["release_version"] = version
+        original = forged(encode(original), route)
+        replay = parse(pair[1], len(pair[1]))
+        replay["execution"] = dict(replay["execution"], bundle=parse(original)["execution"]["bundle"],
+                                   parent_receipt_sha256=digest(original))
+        return original, forged(encode(replay), route)
+
+
 def expected(require_replay=True, change=None):
     """What a consumer registers before running the family; `change` replaces or adds study entries."""
     value = {"schema": "hypersearch.expected-outcomes/v1", "require_replay": require_replay, "studies": {

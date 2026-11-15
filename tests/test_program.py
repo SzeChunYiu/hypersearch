@@ -206,8 +206,8 @@ class ProgramRouteTests(unittest.TestCase):
     def test_timeout_is_incomplete_and_kills_what_the_program_started(self):
         marker = self.root / "pid"
         body = ('import subprocess, time\nchild = subprocess.Popen(["sleep", "600"])\n'
-                'open(arguments["pid"], "w").write(str(child.pid))\ntime.sleep(600)')
-        status, receipt = self.outcome(body, "timeout", arguments={"pid": str(marker)}, timeout=2)
+                'open(arguments["pid"], "w").write(str(child.pid))\ntime.sleep(30)')
+        status, receipt = self.outcome(body, "timeout", arguments={"pid": str(marker)}, timeout=2)  # sleep bounded: never hangs
         self.assertEqual((status, receipt["diagnostics"]), ("INCOMPLETE", "program timeout"))
         pid = int(marker.read_text())
         for _ in range(50):

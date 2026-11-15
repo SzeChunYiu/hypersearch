@@ -4,6 +4,7 @@ import hashlib
 import json
 from pathlib import Path
 import platform
+import signal
 import sqlite3
 import subprocess
 import sys
@@ -80,6 +81,8 @@ def main(argv=None):
     args = parser.parse_args(argv)
     try:
         if args.command.endswith(("-review", "-study", "-census", "-program", "-export")):
+            if signal.getsignal(signal.SIGCHLD) == signal.SIG_IGN:  # inherited across exec, it loses every exit status
+                signal.signal(signal.SIGCHLD, signal.SIG_DFL)
             from .study_paths import launch_boundary
             launch_boundary(Path(__file__).resolve().parents[2])
         if args.command.endswith("-review"):

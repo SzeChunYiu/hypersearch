@@ -3,8 +3,10 @@
 `check-export` re-verifies directories of exported receipts of one frozen
 route (supplied-witness studies, censuses or pinned programs) and, if asked,
 holds them against outcomes a consumer wrote down before execution. It does
-the mechanical part of a review of a family of studies: every file is intact,
-every replay has its original, and what was printed is what was registered.
+the mechanical part of a review of a family of studies: every file is
+consistent with its name and with the others, every replay has its original,
+and what was printed is what was registered. Receipts are unsigned, so
+consistent is all a check of files can show (see [Limits](#limits)).
 
 It is **read-only**. It opens no database, runs no verifier and no program,
 and writes nothing. It accepts no claim, assesses no novelty and lifts no
@@ -37,7 +39,8 @@ require the printed `"ok": true`, not the exit code alone.
 Every entry directly in each directory is looked at. There is no recursion.
 An entry whose name starts with a dot (for example a `.receipt-*` staging
 file left by an interrupted export) is ignored and counted in
-`ignored_dot_files`. **Anything else that is not a receipt of this route is
+`ignored_dot_files`; a consumer should require it to be 0, since an
+interrupted export may have lost a receipt. **Anything else that is not a receipt of this route is
 reported, never skipped**: a symlink, a directory, a file not named `*.json`.
 A directory with no receipt in it is a problem, so deleting the evidence
 cannot read as a pass.
@@ -118,7 +121,8 @@ study then also loses that receipt, for example `study has no original`.
 
 A consumer commits this file **before** running the family. The schema
 `hypersearch.expected-outcomes/v1` is closed: unknown or missing fields,
-duplicate keys and wrong types are refused with exit 2. At most 1 MiB.
+duplicate keys, wrong types, a file that is only `null` and a file over
+1 MiB are refused with exit 2.
 
 ```json
 {"schema": "hypersearch.expected-outcomes/v1", "require_replay": true,
@@ -140,14 +144,24 @@ duplicate keys and wrong types are refused with exit 2. At most 1 MiB.
 - `require_replay`: when true, every study needs `"replayed": true`.
 
 The file is the consumer's statement. The check says only whether the
-receipts agree with it.
+receipts agree with it. **A study is matched by its `study_id` alone**: the
+file names no bundle or program digest, so receipts of another bundle that
+reuses the id are held against the same entry. Pin the bundles themselves
+elsewhere, for example by the consumer commit; a digest field is planned
+(see the [roadmap](ROADMAP.md#planned-for-the-frozen-routes)).
 
 ## Limits
 
-- A receipt names the instrument version that wrote it, and the validators of
-  any other version refuse it. Check an export with the version its bundles
-  pin; receipts written before 0.8.0 are reported as
-  `receipt names another instrument version`.
+- A receipt names the instrument version that wrote it. The check reads
+  receipts of this version and of the earlier releases in `EARLIER` of
+  `hypersearch.export_check`, now 0.7.0 and 0.7.1, whose receipt validators
+  are byte-identical to this one's apart from the version. Receipts of any
+  other version are `receipt names another instrument version`: check them
+  with the version they pin. Reading is all: `run-*` and `replay-*` still
+  refuse a bundle or receipt of another version. **Every release reviews
+  `EARLIER`**: it adds the previous release when no receipt validator
+  changed, and empties the set when one did; a test fails on a version
+  change until that review is done.
 - Receipts are not signed. The check shows that the files are consistent with
   each other and with the expected file; it cannot show who wrote them. A
   digest committed elsewhere, as for `replay-*`, remains the anchor.
@@ -173,9 +187,11 @@ directory; a receipt of another route and of another version; a replay with
 an absent parent, of another bundle, of a replay, with a wrong stored flag
 and with a differing outcome; two originals; every expected-outcome
 difference; a closed expected file; and the real command line with its exit
-codes and launch contract. Each check was removed in turn in a scratch copy
-to confirm that a test fails; the table is in the pull request.
+codes and launch contract; receipts of 0.7.0 and 0.7.1, read here and still
+refused by run and replay; an expected file that is `null` or over 1 MiB.
+Each check was removed in turn in a scratch copy to confirm that a test
+fails.
 
-Author checks only, on Python 3.11, 3.12 and 3.13; counts are in the pull
-request. Not independently reviewed. Linux only. No research executed, no
-claim promoted.
+Tests pass on Python 3.11, 3.12 and 3.13. One independent review; its
+findings are addressed in this change, which has not been reviewed again.
+Linux only. No research executed, no claim promoted.

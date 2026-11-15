@@ -137,11 +137,17 @@ software increment, not completion or director effectiveness evidence.
 - Found in use: receipts recorded elapsed wall time only, so a slow program
   could not be told from a busy host, and the mechanical re-check of a
   family's receipts was done by hand.
-- A pinned program whose exit status is lost because something else reaped
-  it (a caller that ignores SIGCHLD) is now `EXECUTION_FAILED`; before, its
-  output was read as if it had exited 0. The command line is not affected.
+- A process that ignores SIGCHLD loses its children's exit statuses, and the
+  setting is inherited across `exec`. The `run-*`, `replay-*`, review and
+  `check-export` commands now restore the default before anything runs, so a
+  launcher that ignores SIGCHLD no longer changes an outcome; before, a
+  program's output was read as if it had exited 0. A library caller in such
+  a process gets `EXECUTION_FAILED` for a program whose status was lost, never
+  a reading of exit 0, and a timeout stays `INCOMPLETE`.
 - Additive development contract. The version changes, so every frozen bundle
-  must name 0.8.0 with this commit; existing studies keep their old pins, and
-  their receipts are checked with the version that wrote them.
-- Planned, not in this change: a CPU-time limit and a family manifest; see
-  the roadmap.
+  must name 0.8.0 with this commit; existing studies keep their old pins.
+  `check-export` also reads receipts of 0.7.0 and 0.7.1, whose receipt
+  validators are unchanged apart from the version; run and replay still
+  refuse them. Every release reviews that set (`EARLIER`).
+- Planned, not in this change: an admitted exploration route, a CPU-time
+  limit and a family manifest; see the roadmap.

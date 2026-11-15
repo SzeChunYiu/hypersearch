@@ -10,11 +10,14 @@ from . import __version__
 from .census import census_route
 from .program import program_route
 from .study import study_route
+from .study_contract import READ_RELEASES
 from .study_json import MAX_BUNDLE_BYTES, MAX_RECEIPT_BYTES, digest, encode, fields, parse, sha, text
 
 ROUTES = {"study": study_route, "census": census_route, "program": program_route}
 EXPECTED_SCHEMA = "hypersearch.expected-outcomes/v1"
 REFUSED = (ValueError, TypeError, KeyError, RecursionError)
+# Read here only: their receipt validators equal this release's but for the version. Review at every release.
+EARLIER = frozenset({"0.7.0", "0.7.1"})
 
 
 def problem(kind, subject):
@@ -67,10 +70,13 @@ def admit(route, entry):
     name = digest(raw)
     if entry.name != name + ".json":
         return "file name is not the digest of its bytes", None, None
+    token = READ_RELEASES.set(EARLIER)
     try:
         receipt = route.trusted_receipt(raw, name)
     except REFUSED:
         return refusal(route, raw), None, None
+    finally:
+        READ_RELEASES.reset(token)
     if raw != encode(receipt):
         return "receipt is not in the committed encoding", None, None
     return None, name, receipt
@@ -85,7 +91,7 @@ def refusal(route, raw):
         return "receipt refused by the route's validator"
     if type(schema) is str and schema != route.receipt_schema and schema in {make().receipt_schema for make in ROUTES.values()}:
         return "receipt belongs to another route"
-    if type(version) is str and version != __version__:  # no other version admits a receipt than the one it names
+    if type(version) is str and version not in EARLIER | {__version__}:  # only these versions are read
         return "receipt names another instrument version"
     return "receipt refused by the route's validator"
 
@@ -188,6 +194,8 @@ def main(args):
         with open(args.expected, "rb") as source:
             raw = source.read(MAX_BUNDLE_BYTES + 1)
         expected, commitment = parse(raw), digest(raw)
+        if expected is None:  # null is a malformed file, never "no expected outcomes"
+            raise ValueError("unsupported expected outcomes")
     report = dict(check(args.route, args.export, expected), expected_sha256=commitment)
     print(encode(report).decode("ascii"))
     return 0 if report["ok"] else 1

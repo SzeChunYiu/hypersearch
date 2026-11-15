@@ -48,17 +48,24 @@ def run_program(bundle, core, meter=None):
                                      stdin=subprocess.PIPE, stdout=out,
                                      stderr=err, cwd=work, env={"PATH": os.defpath}, start_new_session=True,
                                      preexec_fn=confine)
+            timed_out = False
             try:  # the input is at most 4 KiB, so writing it cannot block; wait4 gives the child's own usage
                 feed(child, encode(bundle["question"]["arguments"]))
                 reap(child, meter, started, limits["timeout_seconds"])
             except subprocess.TimeoutExpired:
-                return {"status": "INCOMPLETE", "verification": None}, "program timeout"
+                timed_out = True
             finally:
                 try:
                     os.killpg(child.pid, signal.SIGKILL)  # the program's process group, not what left it
                 except ProcessLookupError:
                     pass
-                reap(child, meter, started)
+                try:
+                    reap(child, meter, started)
+                except ChildProcessError:  # reaped elsewhere after the timeout: still a timeout, never a failure
+                    if not timed_out:
+                        raise
+            if timed_out:
+                return {"status": "INCOMPLETE", "verification": None}, "program timeout"
             out.seek(0); err.seek(0)
             if child.returncode != 0:
                 detail = err.read(4096).decode("utf-8", errors="replace")

@@ -147,7 +147,9 @@ needed. They are integers because this JSON dialect has no other number.
 
 - **What is measured** is the route's one child process: the verifier child
   of a study or census, the program of a pinned-program task. Wall time runs
-  from just before that child is started until it has been waited for.
+  from just before that child is started until it has been waited for. The
+  end is found by polling every 50 milliseconds at most, so wall time can
+  be up to that much late: it is coarse for short runs. CPU time is not.
   Source checks, the database and the export are outside it; the receipt's
   `elapsed_ms` is a wider interval.
 - `cpu_milliseconds` is user plus system CPU time of that child and of the

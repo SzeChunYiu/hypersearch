@@ -89,7 +89,7 @@ class UsageTests(unittest.TestCase):
         self.assertTrue(result["usage"]["cpu_milliseconds"] < 400, result["usage"])
 
     def test_a_timeout_and_a_failure_still_report_what_was_used(self):
-        result, _ = self.run_program(SPIN + "time.sleep(600)", "timeout", timeout=2)
+        result, _ = self.run_program(SPIN + "time.sleep(30)", "timeout", timeout=2)   # bounded: an unenforced timeout fails
         self.assertEqual(result["outcome_status"], "INCOMPLETE")       # what the killed program had used is still reported
         self.assertTrue(result["usage"]["wall_milliseconds"] >= 2000 and result["usage"]["cpu_milliseconds"] >= 200, result["usage"])
         result, _ = self.run_program(SPIN + "raise SystemExit(3)", "failure")

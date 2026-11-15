@@ -9,7 +9,7 @@ import tempfile
 import unittest
 
 from hypersearch.export_check import check
-from hypersearch.study_json import digest, encode
+from hypersearch.study_json import MAX_BUNDLE_BYTES, digest, encode
 from export_fixture import expected, family, forged, place
 from study_fixture import launch
 
@@ -137,10 +137,16 @@ class ExpectedOutcomeTests(unittest.TestCase):
         result = self.command("--route", "program", "--export", halves[0], "--export", halves[1])
         self.assertEqual((result.returncode, json.loads(result.stdout)["problems"]),
                          (1, [{"problem": "not a regular .json file", "subject": str(halves[1] / "notes.txt")}]))
+        edge = self.root / "edge.json"; edge.write_bytes(encode(expected()).ljust(MAX_BUNDLE_BYTES))   # at the bound
+        self.assertEqual(self.command("--route", "program", "--export", self.export, "--expected", edge).returncode, 0)
+        large = self.root / "large.json"; large.write_bytes(edge.read_bytes() + b" ")                    # one byte over
+        null = self.root / "null.json"; null.write_bytes(b"null")              # malformed, never "no expected file"
         wanted.write_bytes(encode(dict(expected(), extra=1)))
         loose = self.root / "loose.json"; loose.write_text('{"schema": "hypersearch.expected-outcomes/v1", "schema": 1}')
         for refused in (("--route", "program", "--export", self.export, "--expected", wanted),
                         ("--route", "program", "--export", self.export, "--expected", loose),
+                        ("--route", "program", "--export", self.export, "--expected", large),
+                        ("--route", "program", "--export", self.export, "--expected", null),
                         ("--route", "program", "--export", self.export, "--expected", self.root / "missing.json"),
                         ("--route", "program", "--export", self.root / "missing"),
                         ("--route", "program", "--export", self.export, "--export", self.export),
