@@ -12,9 +12,10 @@ from . import program_contract as contract
 from . import study
 from .study_json import artifact_bytes, encode, parse
 
-# The bytes are compiled as source text whatever they look like; an archive or bytecode cannot run.
-BOOTSTRAP = ("import sys\n"
-             "exec(compile(open(sys.argv[1], encoding='utf-8').read(), 'program.py', 'exec'), {'__name__': '__main__'})\n")
+# The bytes are compiled as source text whatever they look like, so an archive, bytecode or an
+# encoding declaration cannot change what runs. One expression: it executes in the real __main__
+# module and adds no name to it.
+BOOTSTRAP = "exec(compile(open(__import__('sys').argv[1], encoding='ascii').read(), 'program.py', 'exec'))"
 
 
 def run_program(bundle, core):

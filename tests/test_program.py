@@ -86,7 +86,28 @@ class ProgramRouteTests(unittest.TestCase):
             status, receipt = self.outcome(body, f"bad{index}", memory=256)
             self.assertEqual((status, receipt["outcome"]["verification"]), ("EXECUTION_FAILED", None), body)
         status, _ = self.outcome('print(json.dumps({"holds": True, "summary": {"x": [[[[[[[[[[[[[[1]]]]]]]]]]]]]]}}))', "depth16")
-        self.assertEqual(status, "PROGRAM_HOLDS")       # depth 16 is the last one admitted
+        self.assertEqual(status, "PROGRAM_HOLDS")       # the object, fourteen lists and the scalar: depth 16, the last admitted
+        status, _ = self.outcome('print(json.dumps({"holds": True, "summary": {"x": [[[[[[[[[[[[[[[1]]]]]]]]]]]]]]]}}))', "depth17")
+        self.assertEqual(status, "EXECUTION_FAILED")
+
+    def test_program_runs_as_plain_source_in_the_real_main_module(self):
+        hidden = ('# -*- coding: utf-7 -*-\nimport json\nhidden = 0\n# +AAo-hidden = 1\n'
+                  'print(json.dumps({"holds": hidden == 0, "summary": {"hidden": hidden}}))\n').encode()
+        root = Path(tempfile.mkdtemp(dir=self.root))
+        core, consumer, bundle = make_program(root, hidden)
+        result = self.run_in_process(core, consumer, contract.wrapper(bundle), name="cookie")
+        self.assertEqual(result["outcome_status"], "PROGRAM_HOLDS")     # the declaration is ignored: no hidden line runs
+        body = ('from __future__ import annotations\nimport dataclasses, json, pickle, typing\n'
+                '@dataclasses.dataclass\nclass A:\n    x: int = 1\n    y: typing.ClassVar[int] = 2\n'
+                'ok = len(dataclasses.fields(A)) == 1 and __name__ == "__main__" and isinstance(pickle.dumps(A()), bytes)\n'
+                'print(json.dumps({"holds": ok, "summary": {"names": sorted(n for n in globals() if not n.startswith("__"))}}))\n')
+        root = Path(tempfile.mkdtemp(dir=self.root))
+        core, consumer, bundle = make_program(root, body.encode())
+        result = self.run_in_process(core, consumer, contract.wrapper(bundle), name="namespace")
+        self.assertEqual(result["outcome_status"], "PROGRAM_HOLDS")
+        receipt = contract.trusted_receipt(Path(result["receipt_path"]).read_bytes(), result["receipt_sha256"])
+        self.assertEqual(receipt["outcome"]["verification"]["summary"]["names"],
+                         ["A", "annotations", "dataclasses", "json", "ok", "pickle", "typing"])   # nothing added by the launch
 
     def test_limits_are_really_imposed_on_the_program(self):
         body = ('import resource, signal\nsignal.signal(signal.SIGXFSZ, signal.SIG_IGN)\nseen = {}\n'
@@ -138,7 +159,7 @@ class ProgramRouteTests(unittest.TestCase):
         else:
             self.fail("the program's own child survived the timeout")
 
-    def refrozen(self, bundle, question=None, limits=None, program=None, drop=()):
+    def refrozen(self, bundle, question=None, limits=None, program=None, drop=(), manifest=None):
         """Change a bundle and re-freeze its manifest, so only the changed field can be the reason for refusal."""
         value = copy.deepcopy(bundle)
         value["question"].update(question or {}); value["limits"].update(limits or {})
@@ -149,8 +170,9 @@ class ProgramRouteTests(unittest.TestCase):
                                                  base64=base64.b64encode(program).decode("ascii"))
             value["question"]["program_sha256"] = digest(program)
         kept = {k: v["sha256"] for k, v in value["artifacts"].items() if k != "study_manifest"}
-        manifest = encode({"schema": "hypersearch.program-manifest/v1", "study_id": value["study_id"],
-                           "question": value["question"], "limits": value["limits"], "artifact_sha256": kept})
+        manifest = encode(dict({"schema": "hypersearch.program-manifest/v1", "study_id": value["study_id"],
+                                "question": value["question"], "limits": value["limits"], "artifact_sha256": kept},
+                               **(manifest or {})))
         value["artifacts"]["study_manifest"].update(bytes=len(manifest), sha256=digest(manifest),
                                                     base64=base64.b64encode(manifest).decode("ascii"))
         return value
@@ -172,9 +194,14 @@ class ProgramRouteTests(unittest.TestCase):
                     dict(limits={"commit_margin_seconds": 4}), dict(limits={"commit_margin_seconds": 61}),
                     dict(limits={"memory_megabytes": 63}), dict(limits={"memory_megabytes": 65537}),
                     dict(limits={"memory_megabytes": True}), dict(limits={"db_max_attempts": 0}), dict(limits={"extra": 1}),
-                    dict(drop=("memory_megabytes",)), dict(program=archive.getvalue()),
+                    dict(drop=("memory_megabytes",)), dict(manifest={"schema": "hypersearch.census-manifest/v1"}),
+                    dict(manifest={"study_id": "other"}), dict(manifest={"limits": dict(bundle["limits"], timeout_seconds=31)}),
+                    dict(manifest={"artifact_sha256": {}}), dict(manifest={"question": dict(bundle["question"], arguments={"n": 9})}),
+                    dict(program=archive.getvalue()),
                     dict(program=b"print(1)\n\"\"\"" + archive.getvalue()), dict(program=b"\x00" + HOLDS),
-                    dict(program=b"   \n"), dict(program=b"\xff\xfe" + HOLDS)):
+                    dict(program=b"   \n"), dict(program=b"\xff\xfe" + HOLDS), dict(program=b"# note\rprint(1)\n" + HOLDS),
+                    dict(program=HOLDS + b"\x7f"), dict(program=HOLDS + "x = '\u202e'\n".encode()),
+                    dict(program=HOLDS + "x = '\u00e9'\n".encode()), dict(program="\ufeff".encode() + HOLDS)):
             with self.assertRaises(ValueError, msg=bad):
                 contract.wrapper(self.refrozen(bundle, **bad))
         disguised = self.refrozen(bundle, program=archive.getvalue())

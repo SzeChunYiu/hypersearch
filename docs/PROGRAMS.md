@@ -16,21 +16,26 @@ example by requiring two independently written programs to agree.
 
 - The program is one Python **source text** file, at most 256 KiB, named in
   the bundle as the artifact `program` and bound by SHA-256 to the committed
-  file. It must be strict UTF-8 made of printable characters, tabs and
-  newlines. An archive or compiled file under a `.py` name is refused, and
-  the bytes are compiled as source in any case, so what a reviewer reads is
-  what runs. `__file__` is not defined.
+  file. It must be printable ASCII with tabs and newlines only. An archive or
+  compiled file under a `.py` name, a carriage return, and any non-ASCII
+  character (including invisible or direction-changing ones) are refused, so
+  what a reviewer reads is what runs.
 - The instrument writes those bundled bytes into a new empty directory and
-  runs them with `python -B -I -S`: no site packages, none of the caller's
-  environment (a default `PATH`; the interpreter may add its own locale
-  variable), no bytecode, and that directory as the working directory. Only
-  the standard library is importable.
-- The program reads its `arguments` (a frozen JSON object of at most 4 KiB,
-  nested at most 16 deep) from standard input.
+  runs `python -B -I -S -c <bootstrap> program.py`. The bootstrap is one
+  expression that compiles the file as source and executes it as the
+  `__main__` module, so an encoding declaration has no effect. `__file__` is
+  not defined. There are no site packages, none of the caller's environment
+  (a default `PATH`; the interpreter may add its own locale variable), no
+  bytecode, and that directory is the working directory. Only the standard
+  library is importable.
+- The program reads its `arguments` (a frozen JSON object of at most 4 KiB
+  and depth at most 16, counting the object itself and the innermost value)
+  from standard input.
 - It must exit 0 and print exactly one JSON object
   `{"holds": true|false, "summary": {...}}`: at most 64 KiB of standard
   output including whitespace, at most 64 KiB when re-encoded in ASCII,
-  nested at most 16 deep, with integers (at most 4,300 digits), strings,
+  depth at most 16 counted the same way, with integers (at most 4,300
+  digits), strings,
   lists, objects, booleans and null only. `holds` is the program's own
   answer to the preregistered question; `summary` carries the counts the
   preregistration asks for.
@@ -119,17 +124,22 @@ request. Tests use trivial synthetic programs and cover recording, replay and
 replay mismatch, isolation, malformed and too deeply nested output, a
 non-zero exit after valid output, memory and file limits observed from
 inside the program, a timeout with a child in the same process group,
-admission with a re-frozen manifest for each refused field, archives and
-bytecode under a `.py` name, cross-route refusal and the real command line.
+admission with a re-frozen manifest for each refused question and limit
+field and for each manifest binding, archives, bytecode and non-ASCII source
+under a `.py` name, an encoding declaration, execution in the real main
+module, cross-route refusal and the real command line.
 
 Review by a separate session started by the author (declared separation, not
 authenticated independence) found four blocking defects in the first
 version, all fixed: a replay differing only as `1` versus `true` was reported
 as matching; deeply nested output crashed the parent after the run and left
 the task open; an archive or bytecode named `.py` ran; and the documentation
-claimed every started process is killed. Identity binding, cross-route
-refusal, the output parser and the other routes held. The fixes were checked
-by the author and CI, not reviewed again.
+claimed every started process is killed. A confirmation pass found those
+fixed and two further points, also fixed: invisible Unicode characters were
+admitted in source, and the launch wrapper ran the program outside the real
+main module. Identity binding, cross-route refusal, the output parser and
+the other routes held throughout. The last fixes were checked by the author
+and CI, not reviewed again.
 
 Limits. Not a sandbox; a process that leaves the group survives. The
 instrument never checks program logic. Determinism

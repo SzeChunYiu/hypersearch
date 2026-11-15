@@ -16,18 +16,15 @@ MAX_DEPTH = 16
 
 
 def source_text(raw):
-    """Admit plain source only: strict UTF-8, tabs, newlines and printable characters.
+    """Admit plain ASCII source only: printable characters, tabs and newlines.
 
-    An archive or compiled file under a .py name contains control bytes and is refused here,
-    so what a reviewer reads in the committed file is what runs.
+    An archive or compiled file under a .py name, a carriage return that hides code after a
+    comment, and Unicode format characters that make displayed text differ from compiled text
+    are all refused, on every interpreter version alike.
     """
-    try:
-        text = raw.decode("utf-8")
-    except UnicodeDecodeError as error:
-        raise ValueError("program must be UTF-8 source text") from error
-    if not text.strip() or any((ord(c) < 32 and c not in "\t\n") or ord(c) == 127 for c in text):
-        raise ValueError("program must be nonempty source text without control characters")
-    return text
+    if not raw.strip() or any(not (32 <= byte < 127 or byte in (9, 10)) for byte in raw):
+        raise ValueError("program must be nonempty printable ASCII source text")
+    return raw.decode("ascii")
 
 
 def depth(value):
