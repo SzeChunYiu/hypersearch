@@ -5,7 +5,7 @@
 - Foundation commit f7254533a9310060bde7f045e7ba89b12d520073: 18 tests and demo passed in GitHub Actions on Python 3.11/3.12/3.13.
 - Governed-adoption development: 33 tests passed locally on Python 3.12.14, including inventory/version checks, mutable-action refusal, exact multiwise verification and task binding.
 - Multiwise C2 known-answer example verifies only D_2(C2) >= 4. An assignment-based tiny oracle cross-checks the subset-packing algorithm. No formal proof, independent-team replication or novel theorem is claimed.
-- Current management version is 0.3.0 development. Exact source pins distinguish this from the original 0.1.0 foundation.
+- Current management version is 0.4.0 development. Exact source pins distinguish this from the original 0.1.0 foundation.
 - Public implementation contains no private research material. Consumer integration is a separate, pinned reviewable change; consumer CI/commissioning evidence belongs with that change.
 
 ## Admission correction — local qualification
