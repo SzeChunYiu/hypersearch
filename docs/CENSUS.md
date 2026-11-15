@@ -73,8 +73,8 @@ All closed, with the strict JSON encoding of the study schemas.
   (5..60; the parent's recheck of a 20-term example takes about a second and
   runs inside the lease).
   `db_max_attempts` counts every lease in the database, across tasks; a
-  refused start says whether the ceiling is spent or the task is held
-  (`reason`, `budget`, `task_state`).
+  refused start says whether the ceiling is spent, the task is held or it
+  was completed meanwhile (`reason`, `budget`, `task_state`).
 - `hypersearch.census-execution/v1` and `hypersearch.census-receipt/v1` have
   the fields of their study counterparts. Task keys use the prefix `census-`.
   A study bundle is refused by the census route and the reverse.

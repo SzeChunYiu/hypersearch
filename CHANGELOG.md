@@ -100,13 +100,16 @@ software increment, not completion or director effectiveness evidence.
 ## 0.7.1 development — a refused start says why
 
 - A frozen task that cannot be leased now reports which refusal occurred:
-  `attempt budget exhausted` or `task is leased to another attempt`, with the
-  database's `budget` and the `task_state`. Before, both read "task
-  unavailable or attempts exhausted". Found in use: a family of ten studies
-  frozen with a ceiling of eight would have had its last two studies refused
-  with no indication that the ceiling, not the task, was the cause.
+  `attempt budget exhausted`, `task is leased to another attempt` or `task
+  was completed by another attempt`, with the database's `budget` and the
+  `task_state`. Before, all read "task unavailable or attempts exhausted".
+  Found in use: a family of studies frozen with a ceiling below their number
+  would have had its last studies refused with no indication that the
+  ceiling, not the task, was the cause.
 - Documentation states that `db_max_attempts` counts every lease in one
   database, across tasks.
-- No schema, verifier or receipt changes. The version changes, so a bundle
-  that wants this behaviour must name 0.7.1 with this commit; existing
-  studies keep their old pins.
+- No schema, verifier or receipt changes. The version changes, so every
+  frozen bundle must name 0.7.1 with this commit; existing studies keep their
+  old pins.
+- The demo command and the review workflow still report an unavailable task
+  without saying why; left for a later change.

@@ -95,10 +95,16 @@ def execute(execution, *, consumer_root, database, export, inputs=(), parent_rec
         # ceiling of at least one attempt per task, and an exhausted ceiling must not look like a busy task.
         after = store.snapshot()
         budget = after["budget"]
-        state = next(t["state"] for t in after["tasks"] if t["id"] == task_id)
-        exhausted = budget["spent"] >= budget["maximum"]
-        return {"execution": "not_started", "task_id": task_id, "budget": budget, "task_state": state,
-                "reason": "attempt budget exhausted" if exhausted else "task is leased to another attempt"}
+        state = next((t["state"] for t in after["tasks"] if t["id"] == task_id), None)
+        if state is None:
+            raise ValueError("stored task disappeared")
+        if state == "completed":  # another attempt finished after the admission read above
+            reason = "task was completed by another attempt"
+        elif budget["spent"] >= budget["maximum"]:
+            reason = "attempt budget exhausted"
+        else:
+            reason = "task is leased to another attempt"
+        return {"execution": "not_started", "task_id": task_id, "budget": budget, "task_state": state, "reason": reason}
     started = time.monotonic()
     diagnostics = ""
     try:

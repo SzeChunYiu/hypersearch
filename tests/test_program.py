@@ -45,7 +45,7 @@ class ProgramRouteTests(unittest.TestCase):
         receipt = contract.trusted_receipt(Path(result["receipt_path"]).read_bytes(), result["receipt_sha256"])
         return result["outcome_status"], receipt
 
-    def test_a_refused_start_names_its_reason_and_changes_nothing(self):
+    def test_a_refused_start_names_its_reason_and_charges_nothing(self):
         # The attempt ceiling counts every lease in the database, not leases per task.
         core, consumer, bundle = make_program(self.root, attempts=1)
         first = self.run_in_process(core, consumer, contract.wrapper(bundle))
@@ -59,6 +59,9 @@ class ProgramRouteTests(unittest.TestCase):
         self.assertEqual((refused["budget"], refused["task_state"]), ({"maximum": 1, "spent": 1}, "pending"))
         after = Store(self.root / "run.sqlite", max_attempts=1).snapshot()
         self.assertEqual((len(after["results"]), after["budget"]["spent"]), (1, 1))
+        # The refusal registers the replay ID as a pending task and writes nothing else.
+        self.assertEqual([e["kind"] for e in after["events"]], ["submitted", "acquired", "completed", "submitted"])
+        self.assertEqual(refused["task_id"], contract.execution_identity(replay)[0])
         self.assertFalse((self.root / "refused").exists())
         # A task that another attempt holds is refused for the other reason, with budget to spare.
         root = Path(tempfile.mkdtemp(dir=self.root))
@@ -72,6 +75,37 @@ class ProgramRouteTests(unittest.TestCase):
         self.assertEqual((busy["execution"], busy["reason"], busy["task_state"]),
                          ("not_started", "task is leased to another attempt", "running"))
         self.assertEqual(busy["budget"], {"maximum": 5, "spent": 1})
+        self.assertEqual(busy["task_id"], task_id)
+        held = store.snapshot()
+        self.assertEqual((held["results"], held["budget"]["spent"], [e["kind"] for e in held["events"]]),
+                         ([], 1, ["submitted", "acquired"]))
+        self.assertFalse((self.root / "busy").exists())
+
+    def test_a_refused_start_reports_the_state_after_the_refusal(self):
+        real = Store.acquire
+
+        def refused(name, attempts, before):
+            root = Path(tempfile.mkdtemp(dir=self.root))
+            core, consumer, bundle = make_program(root, attempts=attempts)
+
+            def acquire(store, worker, lease_seconds=60, *, task_id=None):
+                before(store, task_id)
+                return real(store, worker, lease_seconds, task_id=task_id)
+            with patch.object(Store, "acquire", acquire):
+                result = self.run_in_process(core, consumer, contract.wrapper(bundle), name=name)
+            self.assertFalse((self.root / name).exists())
+            return result["reason"], result["budget"], result["task_state"]
+
+        def take(store, task_id):
+            return real(store, "someone-else", 60, task_id=task_id)
+        # Another attempt takes the lease between the admission read and this acquire.
+        self.assertEqual(refused("raced", 5, take),
+                         ("task is leased to another attempt", {"maximum": 5, "spent": 1}, "running"))
+        # The ceiling is spent and the task is held: the ceiling is named, the state shows the lease.
+        self.assertEqual(refused("both", 1, take), ("attempt budget exhausted", {"maximum": 1, "spent": 1}, "running"))
+        # Another attempt completes the task in that window: it is not leased, and a retry is not_rerun.
+        self.assertEqual(refused("done", 1, lambda store, task_id: store.complete(take(store, task_id), {"placeholder": True})),
+                         ("task was completed by another attempt", {"maximum": 1, "spent": 1}, "completed"))
 
     def test_output_is_recorded_deduplicated_and_replayed(self):
         core, consumer, bundle = make_program(self.root, arguments={"n": 7})
