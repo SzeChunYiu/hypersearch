@@ -13,11 +13,16 @@ The consumer and core must be distinct clean Git checkouts. Sources, inputs and
 protocol are frozen before registration. Database and exports live outside both.
 
 ```sh
-python -m hypersearch register-review --bundle bundle.json \
+run() { python -B -S -X pycache_prefix="$(mktemp -d)" -m hypersearch "$@"; }
+run register-review --bundle bundle.json \
   --consumer-root consumer --db reviews.sqlite --export receipts
-python -m hypersearch grant-review --bundle bundle.json \
+run grant-review --bundle bundle.json \
   --consumer-root consumer --db reviews.sqlite --export receipts > grant.json
 ```
+
+Every command uses a private empty bytecode prefix: source pins do not bind an
+ignored cache that the interpreter would load instead. Admission also refuses
+any cache for the pinned core; see [executed code](STUDIES.md#executed-code-not-only-source-bytes).
 
 Only after a successful persisted grant may the orchestrator dispatch an
 already authorized native expert session with the frozen bundle and grant.
@@ -26,9 +31,9 @@ before registration. Hypersearch does not launch sessions, expose credentials,
 make provider calls, execute report code, or introduce a second scheduler.
 
 ```sh
-python -m hypersearch submit-review --bundle bundle.json --grant grant.json \
+run submit-review --bundle bundle.json --grant grant.json \
   --report report.json --consumer-root consumer --db reviews.sqlite --export receipts
-python -m hypersearch recover-review --bundle bundle.json \
+run recover-review --bundle bundle.json \
   --consumer-root consumer --db reviews.sqlite --export receipts
 ```
 

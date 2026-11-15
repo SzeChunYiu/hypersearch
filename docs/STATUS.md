@@ -97,3 +97,37 @@ legal declared gain; greedy ratio explicitly skips nonpositive gain.
 Duplicate frozen task digests refuse even under distinct candidate IDs.
 Costs are explicitly potentially incomplete declared estimates, not measured totals.
 The corrected synthetic prerequisite and duplicate-task controls pass.
+
+## Executed-bytecode admission correction — 2026-11-15
+
+Reproduced at main `8dfce976f80fabd53e79985de1b6422de26f575a` (and source-identical
+admission code at `06e9c46`, `1ca5ea0`) through the actual CLI on Python 3.11 and
+3.13: with `git status` clean and every source hash matching, an ignored cache for
+a parent-process module executed. Both an unchecked-hash cache and a stale
+timestamp cache whose header matched the pinned file were loaded. A cache for
+`study_outcomes` turned a false synthetic witness (honest outcome REFUTED_WITNESS,
+exit 1) into a committed, exported VERIFIED_WITNESS receipt with exit 0 that
+carried the pinned commit and source hashes. The verifier child was unaffected:
+it already ran with a private cache prefix.
+
+Correction: study and review admission share one executable boundary that refuses
+any file under `__pycache__` in the core `src` tree and any redirected-cache entry
+for a pinned module, before Store construction. Documented launches now use `-B`
+and a private empty `pycache_prefix`. Five new regression tests failed 4/5 on the
+unfixed commit (the fifth pins the existing child isolation) and pass with the fix.
+
+Observed limit, not closed by this change: the check runs in already-imported
+code. A stale admission module built from the previous commit failed closed
+(ImportError, no receipt). A deliberately replaced admission-module cache under a
+launch that reads adjacent caches still produced the false VERIFIED receipt; the
+private-prefix launch refused it. The launch is therefore the control and the
+in-process check is defence in depth. Interpreter startup, the standard library
+and the filesystem owner stay trusted. `demo`/`verify` print source hashes without
+this admission and remain known-answer demonstrations only.
+
+Author checks only: all tests, governance, README demo and multiwise example on
+Python 3.11/3.12/3.13 (counts in the pull request). Independent review, public CI
+and consumer pin adoption remain separate gates. A consumer checkout that holds
+caches from earlier local runs is refused until cleaned; consumers must requalify
+their own launch path. No schema, verifier, API or version change. Existing
+studies keep their original pins. No research was executed.

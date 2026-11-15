@@ -15,7 +15,8 @@ See [schemas](STUDY_CONTRACT.md) and
 `tests/study_fixture.py` constructs wholly synthetic pinned consumers.
 
 ```sh
-PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=src python -m hypersearch run-study \
+CACHE=$(mktemp -d)  # private and empty; never a reused or shared cache directory
+PYTHONPATH=src python -B -S -X pycache_prefix="$CACHE" -m hypersearch run-study \
   --bundle /outside-source/bundle.json --consumer-root /pinned-consumer \
   --db /outside-source/tasks.sqlite --export /outside-source/receipts
 ```
@@ -25,6 +26,24 @@ Index hints cannot hide modified bytes. Source symlinks/unknown executable sourc
 fail. Question/limits exactly match the hashed manifest, including JSON types.
 Consumer entrypoint bytes are hashed, never executed. Dispatch allows only fixed
 bundled verifiers; inputs cannot choose modules, callbacks or commands.
+
+## Executed code, not only source bytes
+
+Source hashes bind files, not what the interpreter loads. An ignored
+`__pycache__` entry is invisible to `git status`, and an unchecked-hash cache,
+or a stale one whose recorded mtime/size still match, is imported in place of
+the pinned file. Disabling bytecode writes does not disable reads. Admission
+therefore refuses any file under `__pycache__` in the core `src` tree and any
+redirected-cache entry for a pinned module, before Store construction. Remove
+caches left by earlier local runs; a consumer checkout must be clean including
+ignored files.
+
+That check runs inside modules that were already imported, so it cannot
+authenticate itself: a deliberately replaced cache of an admission module still
+defeats a launch that reads adjacent caches. The launch above is the control.
+With a private empty `pycache_prefix` and `-B`, no adjacent cache is consulted
+and none is written. The verifier child already runs this way. Interpreter
+startup, the standard library and the filesystem owner remain trusted.
 
 ## One effect-admission boundary
 
@@ -58,7 +77,7 @@ export. Corrupt files or task/result identity/fence mismatches fail, never rewri
 ## Replay and upgrade
 
 ```sh
-PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=src python -m hypersearch replay-study \
+PYTHONPATH=src python -B -S -X pycache_prefix="$(mktemp -d)" -m hypersearch replay-study \
   --receipt /outside-source/receipts/PREVIOUS.json \
   --expected-receipt-sha256 EXTERNALLY_COMMITTED_DIGEST --replay-id replay-2 \
   --consumer-root /pinned-consumer --db /outside-source/tasks.sqlite \
@@ -85,5 +104,5 @@ incomplete/failed execution or replay mismatch. Always inspect receipt scope.
 Development0.3.0 adds APIv1 schemas. Verifier bounds/IDs stay unchanged: ordinary
 order<=64/length<=16; multiwise order<=1,000,000/length<=16/k<=16. No frontier
 completeness follows. Before research, require reviewed core, consumer pin adoption,
-registry/archive integrity, wrong-pin/dirty/wrong-task refusal, known-answer replay,
+registry/archive integrity, wrong-pin/dirty/cached-bytecode/wrong-task refusal, known-answer replay,
 rollback and independent software review. Scientific promotion stays consumer-owned.

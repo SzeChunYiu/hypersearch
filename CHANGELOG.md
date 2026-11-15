@@ -37,3 +37,15 @@ no-authority output, three declared-score baselines and synthetic conformance.
 No existing study/review schema or verifier changes. Exact pins remain required;
 existing studies retain their original evaluator. This is an initial issue #16
 software increment, not completion or director effectiveness evidence.
+
+## 0.5.0 development — executed-bytecode admission correction
+
+- Study and review admission refuse any bytecode cache for the pinned core:
+  files under `__pycache__` in `src`, and redirected-prefix entries for pinned
+  modules. Previously an ignored cache executed while source hashes passed, and
+  a false witness could be committed and exported as VERIFIED_WITNESS.
+- Documented launches use `-B` with a private empty `pycache_prefix`. The
+  in-process check cannot authenticate modules imported before it runs.
+- No schema, verifier, API or version change; the exact commit identifies the
+  instrument. Consumers adopt through a pin PR with their own cache controls.
+  A checkout holding caches from earlier local runs is now refused until cleaned.

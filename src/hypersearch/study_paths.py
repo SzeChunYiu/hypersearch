@@ -1,7 +1,10 @@
 """Cooperative checkout and output boundaries; no network or remote attestation."""
+import importlib.util
+import os
 from pathlib import Path
 import stat
 import subprocess
+import sys
 
 from .study_json import artifact_bytes, digest, parse
 
@@ -51,6 +54,34 @@ def checkout(root, commit, repository):
     return root, tracked
 
 
+def executable_boundary(core, tracked):
+    """Refuse symlinks, unknown executable source and bytecode caches for a pin.
+
+    An ignored cache is invisible to `git status` yet importable, so source
+    hashes alone do not bind the code that runs. This check cannot authenticate
+    modules imported before it: launch with a private empty cache prefix.
+    """
+    source = core / "src"
+    for path in source.rglob("*"):
+        if path.is_symlink():
+            raise ValueError("symlinked executable source")
+        if not path.is_file():
+            continue
+        if "__pycache__" in path.parts:
+            raise ValueError("bytecode cache beside pinned source")
+        if path.suffix in {".py", ".pyc", ".so", ".pyd"} and path.relative_to(core).as_posix() not in tracked:
+            raise ValueError("untracked executable source")
+    if sys.pycache_prefix is not None:
+        # The redirected location is consulted instead, under every import alias.
+        roots = {source} | {Path(entry).absolute() for entry in sys.path
+                            if entry and Path(entry).resolve() == source}
+        for name in tracked:
+            if name.startswith("src/") and name.endswith(".py"):
+                for root in roots:
+                    if os.path.lexists(importlib.util.cache_from_source(str(root / name[4:]))):
+                        raise ValueError("redirected bytecode cache holds pinned source")
+
+
 def verify_sources(bundle, core_root, consumer_root):
     instrument, consumer = bundle["instrument"], bundle["consumer"]
     core, tracked = checkout(core_root, instrument["commit"], instrument["repository"])
@@ -78,12 +109,7 @@ def verify_sources(bundle, core_root, consumer_root):
             or any(type(v) is not str for v in release["verifiers"])
             or instrument["verifier"] not in release["verifiers"]):
         raise ValueError("release does not support the pinned study contract")
-    for path in (core / "src").rglob("*"):
-        if path.is_symlink():
-            raise ValueError("symlinked executable source")
-        if path.is_file() and "__pycache__" not in path.parts and path.suffix in {".py", ".pyc", ".so", ".pyd"}:
-            if path.relative_to(core).as_posix() not in tracked:
-                raise ValueError("untracked executable source")
+    executable_boundary(core, tracked)
     for item in bundle["artifacts"].values():
         if item["path"] not in consumer_tracked or plain_file(consumer_root, item["path"]).read_bytes() != artifact_bytes(item):
             raise ValueError("consumer artifact does not match pinned source")
