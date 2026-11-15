@@ -116,3 +116,11 @@ SQLite transaction documentation and W3C PROV-DM informed the adapted
 [review workflow](REVIEWS.md): reuse existing transactional leases, distinguish
 entities/activities/declared contributors, and never equate provenance with truth.
 No new scientific method or PROV implementation conformance is claimed.
+
+## Shadow policy interface — consulted 2026-11-15
+
+[Public pinned donor audit and design](DIRECTOR_DESIGN.md) identifies residual
+routing and a finite synthetic VOI comparison. This increment reuses no source
+code or scientific efficacy claim. It adds baseline interface conformance only;
+primary methodological review and a frozen evaluation remain prerequisites for
+research comparisons. Seeded hash ordering makes no uniform-randomness claim.

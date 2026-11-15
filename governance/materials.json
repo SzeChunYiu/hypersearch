@@ -68,6 +68,18 @@
       "lifecycle": "active"
     },
     {
+      "path": "docs/DIRECTOR.md",
+      "owner": "documentation-maintainers",
+      "role": "documentation",
+      "lifecycle": "active"
+    },
+    {
+      "path": "docs/DIRECTOR_DESIGN.md",
+      "owner": "documentation-maintainers",
+      "role": "documentation",
+      "lifecycle": "active"
+    },
+    {
       "path": "docs/LITERATURE.md",
       "owner": "documentation-maintainers",
       "role": "documentation",
@@ -182,6 +194,18 @@
       "lifecycle": "active"
     },
     {
+      "path": "src/hypersearch/director.py",
+      "owner": "core-maintainers",
+      "role": "code",
+      "lifecycle": "active"
+    },
+    {
+      "path": "src/hypersearch/director_contract.py",
+      "owner": "core-maintainers",
+      "role": "code",
+      "lifecycle": "active"
+    },
+    {
       "path": "src/hypersearch/governance.py",
       "owner": "core-maintainers",
       "role": "code",
@@ -285,6 +309,12 @@
     },
     {
       "path": "tests/test_cli.py",
+      "owner": "quality-maintainers",
+      "role": "test",
+      "lifecycle": "active"
+    },
+    {
+      "path": "tests/test_director.py",
       "owner": "quality-maintainers",
       "role": "test",
       "lifecycle": "active"

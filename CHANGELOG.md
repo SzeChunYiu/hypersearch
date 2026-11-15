@@ -29,3 +29,11 @@ Development upgrade from the original 0.1.0 foundation; no stable 0.1.0 release 
   Rollback is an explicit source-pin return, not database history deletion.
 
 Breaking schema or evaluator changes require explicit migration notes and consumer revalidation before release.
+
+## 0.5.0 development — shadow recommendation schemas
+
+Adds a pure closed-JSON observation/policy recommendation API with explicit
+no-authority output, three declared-score baselines and synthetic conformance.
+No existing study/review schema or verifier changes. Exact pins remain required;
+existing studies retain their original evaluator. This is an initial issue #16
+software increment, not completion or director effectiveness evidence.
