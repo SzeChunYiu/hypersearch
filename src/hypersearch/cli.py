@@ -75,6 +75,9 @@ def main(argv=None):
     review_arguments(sub)
     args = parser.parse_args(argv)
     try:
+        if args.command.endswith("-review") or args.command in ("run-study", "replay-study"):
+            from .study_paths import launch_boundary
+            launch_boundary(Path(__file__).resolve().parents[2])
         if args.command.endswith("-review"):
             from .review_cli import main as review_main
             return review_main(args)
@@ -119,4 +122,9 @@ def main(argv=None):
         return 0
     except (ValueError, TypeError, OSError, sqlite3.Error, subprocess.SubprocessError, RecursionError) as error:
         print(f"hypersearch: {error}", file=sys.stderr)
+        return 2
+    except Exception as error:  # exit 1 means a completed refutation; a crash must never read as one
+        import traceback
+        traceback.print_exc()
+        print(f"hypersearch: internal failure: {type(error).__name__}: {error}", file=sys.stderr)
         return 2

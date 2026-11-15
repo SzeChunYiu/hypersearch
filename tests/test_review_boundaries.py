@@ -8,7 +8,7 @@ import sys
 from hypersearch import review_workflow as flow
 from hypersearch.study_json import encode
 from review_fixture import report
-from study_fixture import git
+from study_fixture import git, launch
 import unittest
 import test_review_workflow as common
 
@@ -24,7 +24,7 @@ class ReviewBoundaryTests(unittest.TestCase):
         common = ["--bundle", str(bundle), "--consumer-root", str(self.consumer),
                   "--db", str(self.kw["database"]), "--export", str(self.kw["export"])]
         def run(action, *extra):
-            result = subprocess.run([sys.executable,"-m","hypersearch",action,*common,*extra],
+            result = subprocess.run([sys.executable,*launch(self.root/"private-cache"),"-m","hypersearch",action,*common,*extra],
                                     env=env,cwd=self.root,capture_output=True,text=True)
             self.assertEqual(result.returncode,0,result.stderr)
             return json.loads(result.stdout)

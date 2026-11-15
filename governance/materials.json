@@ -308,6 +308,12 @@
       "lifecycle": "active"
     },
     {
+      "path": "tests/test_bytecode_boundary.py",
+      "owner": "quality-maintainers",
+      "role": "test",
+      "lifecycle": "active"
+    },
+    {
       "path": "tests/test_cli.py",
       "owner": "quality-maintainers",
       "role": "test",

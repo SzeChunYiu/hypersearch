@@ -1,7 +1,11 @@
 """Cooperative checkout and output boundaries; no network or remote attestation."""
+import importlib.util
+import os
 from pathlib import Path
 import stat
 import subprocess
+import sys
+import sysconfig
 
 from .study_json import artifact_bytes, digest, parse
 
@@ -51,6 +55,85 @@ def checkout(root, commit, repository):
     return root, tracked
 
 
+def _resolved(path):
+    try:
+        return Path(path).resolve()
+    except (OSError, RuntimeError, TypeError) as error:
+        raise ValueError("unresolvable import path entry") from error
+
+
+def launch_boundary(core):
+    """Command-line launch contract for hash-pinned routes.
+
+    Source pins say nothing about the working directory, site directories or
+    ambient import paths, each of which can supply a module ahead of the pinned
+    one. This catches honest launch mistakes; it runs after some imports, so it
+    is not a control against hostile files under a non-conforming launch.
+    In-process callers own this boundary themselves.
+    """
+    if sys.flags.inspect:
+        raise ValueError("launch without -i or PYTHONINSPECT")
+    if not (sys.flags.safe_path and sys.flags.no_site and sys.dont_write_bytecode and sys.pycache_prefix):
+        raise ValueError("launch with -B -S -P -X pycache_prefix=<new empty directory>")
+    prefix = Path(sys.pycache_prefix)
+    if os.path.lexists(prefix) and (prefix.is_symlink() or not prefix.is_dir() or any(os.scandir(prefix))):
+        raise ValueError("bytecode cache prefix must be a new empty directory")
+    source = _resolved(core / "src")
+    library = [_resolved(sysconfig.get_path(name)) for name in ("stdlib", "platstdlib")]
+    site = [_resolved(sysconfig.get_path(name)) for name in ("purelib", "platlib")]
+    archive = library[0].parent / f"python{sys.version_info.major}{sys.version_info.minor}.zip"
+
+    def within(path, roots):
+        return any(path == root or root in path.parents for root in roots)
+
+    for entry in sys.path:
+        path = _resolved(entry)  # an empty entry is the working directory
+        if path == source or path == archive or (within(path, library) and not within(path, site)):
+            continue
+        raise ValueError("import path reaches outside the pinned core and interpreter library")
+
+
+def executable_boundary(core, tracked):
+    """Refuse symlinks, unknown executable source and bytecode caches for a pin.
+
+    An ignored cache is invisible to `git status` yet importable, so source
+    hashes alone do not bind the code that runs. This check cannot authenticate
+    modules imported before it: the launch contract above is the control.
+    """
+    source = core / "src"
+
+    def unreadable(error):
+        raise ValueError("unreadable source directory") from error
+
+    for directory, folders, files in os.walk(source, onerror=unreadable):
+        for name in (*folders, *files):
+            path = Path(directory, name)
+            mode = path.lstat().st_mode
+            if name == "__pycache__":  # any kind of entry: directory, file, link or pipe
+                raise ValueError("bytecode cache beside pinned source")
+            if stat.S_ISLNK(mode):
+                raise ValueError("symlinked executable source")
+            if stat.S_ISDIR(mode):
+                continue
+            if not stat.S_ISREG(mode):
+                raise ValueError("unsupported entry in pinned source")
+            if path.suffix in {".py", ".pyc", ".so", ".pyd"} and path.relative_to(core).as_posix() not in tracked:
+                raise ValueError("untracked executable source")
+    if sys.pycache_prefix is not None:
+        # The redirected location is consulted instead, under each alias of src on the import path.
+        roots = {source} | {Path(entry).absolute() for entry in sys.path
+                            if entry and _resolved(entry) == source}
+        for name in tracked:
+            if name.startswith("src/") and name.endswith(".py"):
+                for root in roots:
+                    try:
+                        cached = importlib.util.cache_from_source(str(root / name[4:]))
+                    except NotImplementedError as error:
+                        raise ValueError("interpreter cannot name its bytecode cache") from error
+                    if os.path.lexists(cached):
+                        raise ValueError("redirected bytecode cache holds pinned source")
+
+
 def verify_sources(bundle, core_root, consumer_root):
     instrument, consumer = bundle["instrument"], bundle["consumer"]
     core, tracked = checkout(core_root, instrument["commit"], instrument["repository"])
@@ -78,12 +161,7 @@ def verify_sources(bundle, core_root, consumer_root):
             or any(type(v) is not str for v in release["verifiers"])
             or instrument["verifier"] not in release["verifiers"]):
         raise ValueError("release does not support the pinned study contract")
-    for path in (core / "src").rglob("*"):
-        if path.is_symlink():
-            raise ValueError("symlinked executable source")
-        if path.is_file() and "__pycache__" not in path.parts and path.suffix in {".py", ".pyc", ".so", ".pyd"}:
-            if path.relative_to(core).as_posix() not in tracked:
-                raise ValueError("untracked executable source")
+    executable_boundary(core, tracked)
     for item in bundle["artifacts"].values():
         if item["path"] not in consumer_tracked or plain_file(consumer_root, item["path"]).read_bytes() != artifact_bytes(item):
             raise ValueError("consumer artifact does not match pinned source")

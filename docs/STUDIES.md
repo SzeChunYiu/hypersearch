@@ -15,7 +15,8 @@ See [schemas](STUDY_CONTRACT.md) and
 `tests/study_fixture.py` constructs wholly synthetic pinned consumers.
 
 ```sh
-PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=src python -m hypersearch run-study \
+CACHE=$(mktemp -d)  # private and empty; never a reused or shared cache directory
+PYTHONPATH=src python -B -S -P -X pycache_prefix="$CACHE" -m hypersearch run-study \
   --bundle /outside-source/bundle.json --consumer-root /pinned-consumer \
   --db /outside-source/tasks.sqlite --export /outside-source/receipts
 ```
@@ -25,6 +26,54 @@ Index hints cannot hide modified bytes. Source symlinks/unknown executable sourc
 fail. Question/limits exactly match the hashed manifest, including JSON types.
 Consumer entrypoint bytes are hashed, never executed. Dispatch allows only fixed
 bundled verifiers; inputs cannot choose modules, callbacks or commands.
+
+## Executed code, not only source bytes
+
+Source hashes bind files, not what the interpreter loads. Two things can put
+other code in front of a pinned module while `git status` stays clean:
+
+- **A bytecode cache.** An ignored `__pycache__` entry that is unchecked-hash,
+  or stale with a recorded mtime/size that still match, is imported in place of
+  the pinned file. Disabling bytecode writes does not disable reads.
+- **The import path.** `python -m` puts the working directory first, so an
+  ignored standard-library-named file there is imported before the real one;
+  site directories and ambient `PYTHONPATH` entries can do the same.
+
+The study and review commands therefore **require** the launch shown above and
+refuse anything else before any database, grant or export effect:
+
+| Flag | Refused without it because |
+|---|---|
+| `-P` | the working directory would be on the import path |
+| `-S` | site directories and their startup hooks would be loaded |
+| `-B` | the run would write bytecode caches |
+| `-X pycache_prefix=<new empty directory>` | adjacent caches would be consulted |
+
+The cache prefix must not exist yet or must be an empty directory; `-i` and
+`PYTHONINSPECT` are refused because they replace the exit code. Every
+import-path entry must be the pinned `src` or the interpreter's standard
+library (not its site directories). Admission also refuses any entry named
+`__pycache__` under the core `src` tree, whatever its type, and any
+redirected-cache entry for a pinned module. A checkout that has run the unit
+tests or the demo without `-B` holds such caches; delete them first. The
+installed `hypersearch` console script cannot satisfy `-S` and is not a
+supported way to run these commands.
+
+Limits. The flag and working-directory checks run before the package's own
+imports, though after the interpreter's own start-up imports; the remaining
+checks run inside modules that are already imported.
+They catch honest launch mistakes. They are not a control against hostile
+files under a launch that does not conform: such a file can run first and
+forge what the checks read. Under the required launch from a checkout whose
+ignored files an adversary controls, review found no way to execute foreign
+code and still obtain a receipt. A refused launch without `-B` still leaves
+caches behind. Code that imports the package in-process owns its own launch
+boundary. Interpreter startup, the standard library and the filesystem owner
+remain trusted. Unexpected failures inside the command exit 2; failures of
+the interpreter itself, such as a wrong `PYTHONPATH`, exit 1 with nothing on
+stdout.
+**Consumers should require the printed `outcome_status`, not the exit code
+alone.**
 
 ## One effect-admission boundary
 
@@ -58,7 +107,7 @@ export. Corrupt files or task/result identity/fence mismatches fail, never rewri
 ## Replay and upgrade
 
 ```sh
-PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=src python -m hypersearch replay-study \
+PYTHONPATH=src python -B -S -P -X pycache_prefix="$CACHE" -m hypersearch replay-study \
   --receipt /outside-source/receipts/PREVIOUS.json \
   --expected-receipt-sha256 EXTERNALLY_COMMITTED_DIGEST --replay-id replay-2 \
   --consumer-root /pinned-consumer --db /outside-source/tasks.sqlite \
@@ -85,5 +134,5 @@ incomplete/failed execution or replay mismatch. Always inspect receipt scope.
 Development0.3.0 adds APIv1 schemas. Verifier bounds/IDs stay unchanged: ordinary
 order<=64/length<=16; multiwise order<=1,000,000/length<=16/k<=16. No frontier
 completeness follows. Before research, require reviewed core, consumer pin adoption,
-registry/archive integrity, wrong-pin/dirty/wrong-task refusal, known-answer replay,
+registry/archive integrity, wrong-pin/dirty/cached-bytecode/wrong-task refusal, known-answer replay,
 rollback and independent software review. Scientific promotion stays consumer-owned.

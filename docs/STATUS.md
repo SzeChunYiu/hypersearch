@@ -97,3 +97,83 @@ legal declared gain; greedy ratio explicitly skips nonpositive gain.
 Duplicate frozen task digests refuse even under distinct candidate IDs.
 Costs are explicitly potentially incomplete declared estimates, not measured totals.
 The corrected synthetic prerequisite and duplicate-task controls pass.
+
+## Executed-code admission correction — 2026-11-15
+
+Reproduced at main `8dfce976f80fabd53e79985de1b6422de26f575a` through the actual
+CLI on Python 3.11 and 3.13: with `git status` clean and every source hash
+matching, an ignored cache for a parent-process module executed. Unchecked-hash
+caches and stale timestamp caches with a matching header were both loaded. A
+cache for `study_outcomes` turned a false synthetic witness (honest outcome
+REFUTED_WITNESS, exit 1) into a committed, exported VERIFIED_WITNESS receipt
+with exit 0 carrying the pinned commit and source hashes. `study_paths.py` is
+byte-identical at `06e9c46` and `1ca5ea0`; the review route did not exist at the
+latter. The verifier child was unaffected: it already used a private prefix.
+
+First correction (`d6d0cbe`): one shared boundary refusing caches for the pinned
+core, with a documented private-prefix launch. A fresh-context adversarial
+review of that commit found it insufficient:
+
+- **Blocking.** Under the documented launch, an ignored sourceless
+  `argparse.pyc` in the launch directory still executed and produced the false
+  VERIFIED receipt, because `python -m` puts the working directory first on the
+  import path. This predates the change; the documented launch did not close it.
+- A named pipe or an unlistable directory at `__pycache__` passed the check.
+- An import path through a directory of symlinks to the pinned files bypassed
+  the redirected-cache check.
+- The review launch snippet lacked `PYTHONPATH`; crashes exited 1, the code
+  reserved for a completed refutation; a checkout under a directory named
+  `__pycache__` was refused.
+
+Second correction (`c953154`): study and review commands refuse unless started
+with `-B -S -P -X pycache_prefix=<new empty directory>` and unless the import
+path holds only the pinned `src` and the interpreter's library. Any entry named
+`__pycache__` under `src` is refused whatever its type. Unexpected failures
+exit 2.
+
+The same reviewer re-attacked that commit and found nothing blocking: every
+first-round finding was closed under the required launch, and no way was found
+to execute foreign code and still obtain a receipt when the launch is exactly
+the documented one and the adversary controls only ignored files. It did find:
+
+- the cache prefix was not checked to be empty, so a reused prefix holding a
+  standard-library cache produced the false receipt with all four flags;
+- `-i` or `PYTHONINSPECT` turned a refusal into exit 0 or 1;
+- the checks ran after `argparse` was imported, so a hostile file in the launch
+  directory under a non-conforming launch could forge what they read;
+- site directories under the standard-library directory were accepted, an
+  absent path entry was trusted after imports, and an interpreter with a zip
+  standard library was refused; the review snippet used relative operands.
+
+Third correction (this change): the prefix must be absent or empty; inspect
+mode is refused with a hard exit 2; the flag and working-directory checks run
+in `__main__` before the package's own imports; site directories and absent
+entries are no longer accepted and the standard-library zip is. Eleven
+regression tests. Measured by the reviewer on the ten-test version: eight
+fail against the first correction and three against the second. Against the
+unfixed commit the current test module cannot import; the original five-test
+version failed four of five there.
+
+A third, bounded review of that commit found nothing blocking and four small
+items, fixed here: the phrase "before any non-frozen import" was false (the
+interpreter's own start-up imports precede it, so a hostile file under a
+non-conforming launch can still win); a launch from a deleted working
+directory crashed with exit 1; `--` before the command skipped the early
+check; two statements in this file and the changelog were imprecise.
+
+Limits that remain. The later checks run in already-imported code. They catch
+honest mistakes; they are not a control against hostile files under a launch
+that does not conform, and a replaced admission module under such a launch
+still wins. Interpreter-level failures exit 1 without output. A launch chosen
+by an adversary is outside the contract. Interpreter startup, the standard
+library and the filesystem owner stay trusted. In-process callers bypass the
+launch contract by design. `demo` and `verify` print source hashes without
+this admission.
+
+Evidence class: author checks plus two rounds of fresh-context review by a
+session the author started. That is declared separation, not independent
+certification. The third correction has author checks only. Counts are in the
+pull request. Public CI and consumer pin adoption are separate gates.
+**Consumers launching these commands must add `-P`** and should check the
+printed `outcome_status`. No schema, verifier, API or version change. Existing
+studies keep their pins. No research executed.

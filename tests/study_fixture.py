@@ -8,6 +8,11 @@ from hypersearch.study_json import digest, encode
 from test_study_contract import bundle
 
 
+def launch(private):
+    """Interpreter flags the hash-pinned command-line routes require."""
+    return ["-B", "-S", "-P", "-X", f"pycache_prefix={private}"]
+
+
 def git(root, *args):
     return subprocess.run(["/usr/bin/git", "-C", str(root), *args],
                           capture_output=True, text=True, check=True).stdout.strip()

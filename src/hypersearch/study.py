@@ -25,7 +25,7 @@ def run_verifier(bundle, core):
         with tempfile.TemporaryFile() as out, tempfile.TemporaryFile() as err:
             try:
                 result = subprocess.run(
-                    [sys.executable, "-B", "-S", "-X", "pycache_prefix=" + work + "/bytecode",
+                    [sys.executable, "-B", "-S", "-P", "-X", "pycache_prefix=" + work + "/bytecode",
                      "-m", "hypersearch.study_worker"], input=encode(bundle), stdout=out, stderr=err,
                     cwd=work, env=environment, timeout=bundle["limits"]["timeout_seconds"], check=False)
             except subprocess.TimeoutExpired:

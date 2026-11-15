@@ -3,7 +3,7 @@ from pathlib import Path
 from . import __version__
 from .review_contract import SCHEMAS, receipt
 from .study_json import artifact_bytes, digest, encode, parse
-from .study_paths import checkout, plain_file
+from .study_paths import checkout, executable_boundary, plain_file
 
 
 def sources(value, core_root, consumer_root, parent_raw=None):
@@ -24,13 +24,7 @@ def sources(value, core_root, consumer_root, parent_raw=None):
             or release.get("api") != instrument["api"] or not SCHEMAS <= set(release.get("schemas", []))
             or release.get("status") not in {"development", "release-candidate", "released"}):
         raise ValueError("review instrument version or schemas mismatch")
-    for path in (core / "src").rglob("*"):
-        if path.is_symlink():
-            raise ValueError("symlinked executable source")
-        if (path.is_file() and "__pycache__" not in path.parts
-                and path.suffix in {".py", ".pyc", ".so", ".pyd"}
-                and path.relative_to(core).as_posix() not in tracked):
-            raise ValueError("untracked executable source")
+    executable_boundary(core, tracked)
     for item in value["artifacts"].values():
         if item["path"] not in inputs or plain_file(consumer_root, item["path"]).read_bytes() != artifact_bytes(item):
             raise ValueError("review input differs from consumer source")
