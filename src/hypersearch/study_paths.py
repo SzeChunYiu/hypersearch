@@ -67,18 +67,29 @@ def launch_boundary(core):
 
     Source pins say nothing about the working directory, site directories or
     ambient import paths, each of which can supply a module ahead of the pinned
-    one. In-process callers own this boundary themselves.
+    one. This catches honest launch mistakes; it runs after some imports, so it
+    is not a control against hostile files under a non-conforming launch.
+    In-process callers own this boundary themselves.
     """
+    if sys.flags.inspect:
+        raise ValueError("launch without -i or PYTHONINSPECT")
     if not (sys.flags.safe_path and sys.flags.no_site and sys.dont_write_bytecode and sys.pycache_prefix):
         raise ValueError("launch with -B -S -P -X pycache_prefix=<new empty directory>")
+    prefix = Path(sys.pycache_prefix)
+    if os.path.lexists(prefix) and (prefix.is_symlink() or not prefix.is_dir() or any(os.scandir(prefix))):
+        raise ValueError("bytecode cache prefix must be a new empty directory")
     source = _resolved(core / "src")
-    library = {_resolved(sysconfig.get_path(name)) for name in ("stdlib", "platstdlib")}
+    library = [_resolved(sysconfig.get_path(name)) for name in ("stdlib", "platstdlib")]
+    site = [_resolved(sysconfig.get_path(name)) for name in ("purelib", "platlib")]
+    archive = library[0].parent / f"python{sys.version_info.major}{sys.version_info.minor}.zip"
+
+    def within(path, roots):
+        return any(path == root or root in path.parents for root in roots)
+
     for entry in sys.path:
-        path = _resolved(entry)
-        if path == source or any(path == root or root in path.parents for root in library):
+        path = _resolved(entry)  # an empty entry is the working directory
+        if path == source or path == archive or (within(path, library) and not within(path, site)):
             continue
-        if not os.path.lexists(path):
-            continue  # e.g. the interpreter's absent pythonXY.zip
         raise ValueError("import path reaches outside the pinned core and interpreter library")
 
 

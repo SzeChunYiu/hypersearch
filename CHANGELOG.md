@@ -40,18 +40,23 @@ software increment, not completion or director effectiveness evidence.
 
 ## 0.5.0 development — executed-code admission correction
 
-- Study and review commands refuse any launch other than
-  `-B -S -P -X pycache_prefix=<new empty directory>`, and any import-path entry
-  that is not the pinned `src` or the interpreter's own library. Previously an
-  ignored cache, or an ignored standard-library-named file in the launch
-  directory, executed while source hashes passed, and a false witness could be
-  committed and exported as VERIFIED_WITNESS.
+- Study and review commands require the launch
+  `-B -S -P -X pycache_prefix=<new empty directory>`, an empty cache prefix, no
+  inspect mode, and an import path made only of the pinned `src` and the
+  interpreter's standard library. Previously an ignored cache, or an ignored
+  standard-library-named file in the launch directory, executed while source
+  hashes passed, and a false witness could be committed and exported as
+  VERIFIED_WITNESS.
 - Admission refuses any entry named `__pycache__` under the pinned `src` tree
   and any redirected-cache entry for a pinned module.
-- An unexpected failure exits 2. Exit 1 is reserved for a completed refutation.
-- **Consumer migration:** a consumer that launches these commands must add
-  `-P`. A core checkout holding caches, including ones written by running the
-  tests or demo without `-B`, is refused until they are deleted. In-process
-  callers are not subject to the launch contract and own their own boundary.
+- Unexpected failures inside a command exit 2; exit 1 stays a completed
+  refutation. Interpreter-level failures still exit 1 without output, so
+  consumers should require the printed `outcome_status` as well.
+- These checks catch honest launch mistakes. They do not defend a
+  non-conforming launch against hostile files, which can run before them.
+- **Consumer migration:** add `-P` to launches of these commands; do not use
+  the installed console script for them. A core checkout holding caches,
+  including ones written by running the tests or demo without `-B`, is refused
+  until they are deleted. In-process callers own their own boundary.
 - No schema, verifier, API or version change; the exact commit identifies the
   instrument. Adoption is a consumer pin PR with that consumer's own controls.

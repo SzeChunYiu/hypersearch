@@ -124,5 +124,7 @@ def main(argv=None):
         print(f"hypersearch: {error}", file=sys.stderr)
         return 2
     except Exception as error:  # exit 1 means a completed refutation; a crash must never read as one
+        import traceback
+        traceback.print_exc()
         print(f"hypersearch: internal failure: {type(error).__name__}: {error}", file=sys.stderr)
         return 2

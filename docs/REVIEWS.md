@@ -15,14 +15,15 @@ protocol are frozen before registration. Database and exports live outside both.
 ```sh
 CACHE=$(mktemp -d)  # private and empty
 run() { PYTHONPATH=src python -B -S -P -X pycache_prefix="$CACHE" -m hypersearch "$@"; }
-run register-review --bundle bundle.json \
-  --consumer-root consumer --db reviews.sqlite --export receipts
-run grant-review --bundle bundle.json \
-  --consumer-root consumer --db reviews.sqlite --export receipts > grant.json
+run register-review --bundle /outside-source/bundle.json \
+  --consumer-root /pinned-consumer --db /outside-source/reviews.sqlite --export /outside-source/receipts
+run grant-review --bundle /outside-source/bundle.json \
+  --consumer-root /pinned-consumer --db /outside-source/reviews.sqlite --export /outside-source/receipts > /outside-source/grant.json
 ```
 
-Run from the core checkout root. These flags are required and any other launch
-is refused: source pins do not bind an ignored cache or an earlier import-path
+Run from the core checkout root, with inputs and outputs outside both
+checkouts. These flags are required and an honest launch without them is
+refused: source pins do not bind an ignored cache or an earlier import-path
 entry that the interpreter would load instead. See
 [executed code](STUDIES.md#executed-code-not-only-source-bytes).
 
@@ -33,10 +34,11 @@ before registration. Hypersearch does not launch sessions, expose credentials,
 make provider calls, execute report code, or introduce a second scheduler.
 
 ```sh
-run submit-review --bundle bundle.json --grant grant.json \
-  --report report.json --consumer-root consumer --db reviews.sqlite --export receipts
-run recover-review --bundle bundle.json \
-  --consumer-root consumer --db reviews.sqlite --export receipts
+run submit-review --bundle /outside-source/bundle.json --grant /outside-source/grant.json \
+  --report /outside-source/report.json --consumer-root /pinned-consumer \
+  --db /outside-source/reviews.sqlite --export /outside-source/receipts
+run recover-review --bundle /outside-source/bundle.json \
+  --consumer-root /pinned-consumer --db /outside-source/reviews.sqlite --export /outside-source/receipts
 ```
 
 Recovery reads the existing completed result and exports its exact receipt; it

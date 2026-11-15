@@ -125,25 +125,46 @@ review of that commit found it insufficient:
   reserved for a completed refutation; a checkout under a directory named
   `__pycache__` was refused.
 
-Second correction (this change): the launch is enforced, not only documented.
-Study and review commands refuse unless started with
-`-B -S -P -X pycache_prefix=<new empty directory>` and unless every import-path
-entry is the pinned `src`, the interpreter's library, or absent. Any entry named
-`__pycache__` under `src` is refused whatever its type. Unexpected failures exit
-2. Nine regression tests; six fail against the first correction and four of the
-original five fail against the unfixed commit.
+Second correction (`c953154`): study and review commands refuse unless started
+with `-B -S -P -X pycache_prefix=<new empty directory>` and unless the import
+path holds only the pinned `src` and the interpreter's library. Any entry named
+`__pycache__` under `src` is refused whatever its type. Unexpected failures
+exit 2.
 
-Limits that remain. The checks run in already-imported code. Observed: a stale
-admission module built from the previous commit failed closed; a deliberately
-replaced admission-module cache under a launch that reads adjacent caches
-produced the false receipt before this change and is now stopped only if the
-replaced module still enforces the launch. A launch chosen by an adversary is
-outside the contract. Interpreter startup, the standard library and the
-filesystem owner stay trusted. In-process callers bypass the launch contract by
-design. `demo` and `verify` print source hashes without this admission.
+The same reviewer re-attacked that commit and found nothing blocking: every
+first-round finding was closed under the required launch, and no way was found
+to execute foreign code and still obtain a receipt when the launch is exactly
+the documented one and the adversary controls only ignored files. It did find:
 
-Evidence class: author checks plus one fresh-context review by a session the
-author started. That is declared separation, not independent certification.
-Counts are in the pull request. Public CI and consumer pin adoption are separate
-gates. **Consumers launching these commands must add `-P`.** No schema, verifier,
-API or version change. Existing studies keep their pins. No research executed.
+- the cache prefix was not checked to be empty, so a reused prefix holding a
+  standard-library cache produced the false receipt with all four flags;
+- `-i` or `PYTHONINSPECT` turned a refusal into exit 0 or 1;
+- the checks ran after `argparse` was imported, so a hostile file in the launch
+  directory under a non-conforming launch could forge what they read;
+- site directories under the standard-library directory were accepted, an
+  absent path entry was trusted after imports, and an interpreter with a zip
+  standard library was refused; the review snippet used relative operands.
+
+Third correction (this change): the prefix must be absent or empty; inspect
+mode is refused with a hard exit 2; the flag and working-directory checks run
+in `__main__` before any non-frozen import; site directories and absent
+entries are no longer accepted and the standard-library zip is. Ten regression
+tests: six of the first nine fail against the first correction, eight against
+the unfixed commit.
+
+Limits that remain. The later checks run in already-imported code. They catch
+honest mistakes; they are not a control against hostile files under a launch
+that does not conform, and a replaced admission module under such a launch
+still wins. Interpreter-level failures exit 1 without output. A launch chosen
+by an adversary is outside the contract. Interpreter startup, the standard
+library and the filesystem owner stay trusted. In-process callers bypass the
+launch contract by design. `demo` and `verify` print source hashes without
+this admission.
+
+Evidence class: author checks plus two rounds of fresh-context review by a
+session the author started. That is declared separation, not independent
+certification. The third correction has author checks only. Counts are in the
+pull request. Public CI and consumer pin adoption are separate gates.
+**Consumers launching these commands must add `-P`** and should check the
+printed `outcome_status`. No schema, verifier, API or version change. Existing
+studies keep their pins. No research executed.

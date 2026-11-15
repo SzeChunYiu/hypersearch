@@ -13,8 +13,10 @@ import subprocess
 import sys
 import tempfile
 import unittest
+from unittest.mock import patch
 
 from hypersearch.study import run_verifier
+from hypersearch.study_paths import executable_boundary
 from hypersearch.study_json import encode
 from review_fixture import fixture
 from study_fixture import git, launch, make
@@ -118,15 +120,39 @@ class BytecodeBoundaryTests(unittest.TestCase):
         py_compile.compile(str(shadow), cfile=str(cwd / "argparse.pyc"), doraise=True); shadow.unlink()
         result, _ = self.study(core, consumer, bundle, "shadow", cwd=cwd)
         self.assertEqual((result.returncode, self.marker.exists()), (1, False), result.stderr)
+        # Launch mistakes are refused before the shadow could be imported at all.
+        self.refused(self.study(core, consumer, bundle, "no-safe-path", cwd=cwd, flags=[f for f in self.safe if f != "-P"]), "launch with")
+        self.refused(self.study(core, consumer, bundle, "empty-entry", cwd=cwd, path=f"{core / 'src'}:"), "import path")
+        self.assertFalse(self.marker.exists())
         alias = self.root / "alias"; alias.mkdir()
         (alias / "hypersearch").symlink_to(core / "src/hypersearch", target_is_directory=True)
         self.refused(self.study(core, consumer, bundle, "alias-run", path=alias), "import path")
 
-    def test_populated_redirected_cache_is_refused(self):
+    def test_cache_prefix_must_be_new_and_empty(self):
         core, consumer, bundle = make(self.root)
         prefix = self.root / "shared-cache"
         poison(core, "study_outcomes", MARK.format(marker=str(self.marker)), prefix=prefix)
-        self.refused(self.study(core, consumer, bundle, "redirected", flags=launch(prefix)), "redirected bytecode cache")
+        self.refused(self.study(core, consumer, bundle, "redirected", flags=launch(prefix)), "new empty directory")
+        unrelated = self.root / "reused-cache"; unrelated.mkdir(); (unrelated / "other.pyc").write_bytes(b"")
+        self.refused(self.study(core, consumer, bundle, "reused", flags=launch(unrelated)), "new empty directory")
+        # In-process callers skip the launch contract; admission still sees the redirected cache.
+        tracked = set(git(core, "ls-files").splitlines())
+        with patch.object(sys, "pycache_prefix", str(prefix)), self.assertRaisesRegex(ValueError, "redirected bytecode cache"):
+            executable_boundary(core, tracked)
+
+    def test_inspect_mode_cannot_rewrite_the_exit_code(self):
+        core, consumer, bundle = make(self.root, multi=True, false=True)
+        (core / "untracked.txt").write_text("dirty")   # a refusal, which -i would otherwise turn into exit 0
+        source = self.root / "bundle.json"; source.write_bytes(encode(bundle))
+        arguments = ("run-study", "--bundle", source, "--consumer-root", consumer,
+                     "--db", self.root / "inspect.sqlite", "--export", self.root / "inspect")
+        for flags, extra in (((*self.safe, "-i"), {}), (self.safe, {"PYTHONINSPECT": "1"})):
+            result = subprocess.run([sys.executable, *flags, "-m", "hypersearch", *map(str, arguments)],
+                                    env={"PATH": os.defpath, "PYTHONPATH": str(core / "src"), **extra},
+                                    stdin=subprocess.DEVNULL, capture_output=True, text=True, timeout=90)
+            self.assertEqual(result.returncode, 2, result.stderr)
+            self.assertIn("launch without -i", result.stderr)
+            self.assertFalse((self.root / "inspect.sqlite").exists())
 
     def test_any_entry_named_pycache_is_refused(self):
         core, consumer, bundle = make(self.root)

@@ -46,22 +46,32 @@ refuse anything else before any effect:
 |---|---|
 | `-P` | the working directory would be on the import path |
 | `-S` | site directories and their startup hooks would be loaded |
-| `-B` | the run would write caches into the checkout |
+| `-B` | the run would write bytecode caches |
 | `-X pycache_prefix=<new empty directory>` | adjacent caches would be consulted |
 
-Every import-path entry must then be the pinned `src`, the interpreter's own
-library, or absent. Admission also refuses any entry named `__pycache__` under
-the core `src` tree, whatever its type, and any redirected-cache entry for a
-pinned module. A checkout that has run the unit tests or the demo without `-B`
-holds such caches; delete them first.
+The cache prefix must not exist yet or must be an empty directory; `-i` and
+`PYTHONINSPECT` are refused because they replace the exit code. Every
+import-path entry must be the pinned `src` or the interpreter's standard
+library (not its site directories). Admission also refuses any entry named
+`__pycache__` under the core `src` tree, whatever its type, and any
+redirected-cache entry for a pinned module. A checkout that has run the unit
+tests or the demo without `-B` holds such caches; delete them first. The
+installed `hypersearch` console script cannot satisfy `-S` and is not a
+supported way to run these commands.
 
-Limits. These checks run inside modules that are already imported, so they
-cannot authenticate themselves: a launch that reads adjacent caches can be
-handed a replaced admission module. The required launch is what prevents that,
-and a launch chosen by an adversary is outside this contract. Code that imports
-the package in-process, instead of using these commands, owns its own launch
+Limits. The flag and working-directory checks run before any non-frozen
+import; the remaining checks run inside modules that are already imported.
+They catch honest launch mistakes. They are not a control against hostile
+files under a launch that does not conform: such a file can run first and
+forge what the checks read. Under the required launch from a checkout whose
+ignored files an adversary controls, review found no way to execute foreign
+code and still obtain a receipt. A refused launch without `-B` still leaves
+caches behind. Code that imports the package in-process owns its own launch
 boundary. Interpreter startup, the standard library and the filesystem owner
-remain trusted. An unexpected failure exits 2, never 1.
+remain trusted. Unexpected failures inside the command exit 2; failures of
+the interpreter itself, such as a wrong `PYTHONPATH`, exit 1 without output.
+**Consumers should require the printed `outcome_status`, not the exit code
+alone.**
 
 ## One effect-admission boundary
 
