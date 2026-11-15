@@ -92,3 +92,10 @@ The pure [director API](docs/DIRECTOR.md) ranks frozen candidate declarations
 without Store access or execution authority. It provides supplied-order, declared
 gain/cost and seeded-hash-order baselines. These are hypothetical scores, not
 calibrated VOI, scientific acceptance or evidence of optimal allocation.
+
+## Exhaustive census tasks — 0.6.0 development
+
+`run-census` counts, exhaustively and through the same frozen route, the
+sequences of a given length over a small group that avoid zero-sums of chosen
+lengths. See [census tasks](docs/CENSUS.md). A count of zero is one
+implementation's finite computation, not a proof.

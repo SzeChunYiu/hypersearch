@@ -60,3 +60,21 @@ software increment, not completion or director effectiveness evidence.
   until they are deleted. In-process callers own their own boundary.
 - No schema, verifier, API or version change; the exact commit identifies the
   instrument. Adoption is a consumer pin PR with that consumer's own controls.
+
+## 0.6.0 development — exhaustive census tasks
+
+- New verifier `hypersearch.zero-sum-census/v1` and four closed
+  `hypersearch.census-*/v1` schemas: an exhaustive count of sequences of a
+  given length over a small group with no zero-sum of length at most m and,
+  optionally, none of length at least q. Commands `run-census` and
+  `replay-census`.
+- The census uses the existing Store, lease, receipt, export and replay path.
+  To share it, the study executor takes a route; the supplied-witness route's
+  behaviour, schemas, verifier IDs and bounds are unchanged.
+- A reported example is rechecked by the parent with separate code, once per
+  process. The parent applies necessary conditions to the level profile and
+  refuses a zero that contradicts the standard zero-sum-free sequence. Any
+  other zero has no independent check and needs a known-answer control and
+  review. The census commit margin is 5 to 60 seconds.
+- Additive development contract. The version changes, so every frozen bundle
+  must name 0.6.0 with this commit; existing studies keep their old pins.

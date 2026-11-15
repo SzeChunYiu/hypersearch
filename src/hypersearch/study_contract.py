@@ -10,9 +10,10 @@ VERIFIERS = {"ordinary-witness": "hypersearch.zero-sum-subsets/v1",
 ARTIFACTS = {"study_manifest", "preregistration", "claim_record", "certificate"}
 
 
-def validate_bundle(value):
+def admit_common(value, schema, names):
+    """Closed identity, source and raw-artifact admission shared by frozen routes."""
     fields(value, "schema study_id consumer instrument question artifacts limits")
-    if value["schema"] != "hypersearch.study-bundle/v1":
+    if value["schema"] != schema:
         raise ValueError("unsupported study bundle")
     text(value["study_id"])
     consumer, instrument = value["consumer"], value["instrument"]
@@ -31,11 +32,11 @@ def validate_bundle(value):
         raise ValueError("missing instrument source identities")
     for path, value_sha in sources.items():
         relative(path); sha(value_sha)
-    fields(value["artifacts"], "study_manifest preregistration claim_record certificate")
+    fields(value["artifacts"], " ".join(names))
     artifacts = value["artifacts"]
     raw = {name: artifact_bytes(item, 65536 if name in {"certificate", "study_manifest"} else 262144)
            for name, item in artifacts.items()}
-    if len({a["path"] for a in artifacts.values()} | {consumer["entrypoint"]}) != 5:
+    if len({a["path"] for a in artifacts.values()} | {consumer["entrypoint"]}) != len(names) + 1:
         raise ValueError("artifact paths must be distinct")
     if (consumer["claim_record_sha256"] != artifacts["claim_record"]["sha256"]
             or consumer["preregistration_sha256"] != artifacts["preregistration"]["sha256"]):
@@ -43,6 +44,12 @@ def validate_bundle(value):
     claim = parse(raw["claim_record"])
     if type(claim) is not dict or claim.get("id") != consumer["claim_id"]:
         raise ValueError("claim identity mismatch")
+    return consumer, instrument, artifacts, raw
+
+
+def validate_bundle(value):
+    consumer, instrument, artifacts, raw = admit_common(
+        value, "hypersearch.study-bundle/v1", ("study_manifest", "preregistration", "claim_record", "certificate"))
     limits = value["limits"]
     fields(limits, "db_max_attempts timeout_seconds commit_margin_seconds max_certificate_bytes")
     integer(limits["db_max_attempts"], 1, 2**63 - 1)
@@ -81,15 +88,15 @@ def validate_bundle(value):
     return value
 
 
-def wrapper(bundle, *, parent=None, replay_id=None):
-    value = {"schema": "hypersearch.study-execution/v1", "kind": "original" if parent is None else "replay",
+def wrapper(bundle, *, parent=None, replay_id=None, schema="hypersearch.study-execution/v1", admit=None):
+    value = {"schema": schema, "kind": "original" if parent is None else "replay",
              "bundle": bundle, "parent_receipt_sha256": parent, "replay_id": replay_id}
-    return validate_wrapper(value)
+    return validate_wrapper(value, schema=schema, admit=admit)
 
 
-def validate_wrapper(value):
+def validate_wrapper(value, *, schema="hypersearch.study-execution/v1", admit=None):
     fields(value, "schema kind bundle parent_receipt_sha256 replay_id")
-    if (value["schema"] != "hypersearch.study-execution/v1" or type(value["kind"]) is not str
+    if (value["schema"] != schema or type(value["kind"]) is not str
             or value["kind"] not in {"original", "replay"}):
         raise ValueError("unsupported execution wrapper")
     if value["kind"] == "original":
@@ -97,17 +104,17 @@ def validate_wrapper(value):
             raise ValueError("original execution cannot select a replay identity")
     else:
         sha(value["parent_receipt_sha256"]); text(value["replay_id"])
-    validate_bundle(value["bundle"])
+    (admit or validate_bundle)(value["bundle"])
     if len(encode(value)) > MAX_BUNDLE_BYTES:
         raise ValueError("execution wrapper exceeds admitted byte bound")
     return value
 
 
-def execution_identity(value):
+def execution_identity(value, *, prefix="study", namespace="hypersearch.replay-id/v1", validate=None):
     """Return DB task key and immutable full-wrapper identity separately."""
-    validate_wrapper(value)
+    (validate or validate_wrapper)(value)
     specification = digest(encode(value))
     if value["kind"] == "original":
-        return "study-" + specification, specification
-    key = {"namespace": "hypersearch.replay-id/v1", "replay_id": value["replay_id"]}
-    return "study-replay-" + digest(encode(key)), specification
+        return prefix + "-" + specification, specification
+    key = {"namespace": namespace, "replay_id": value["replay_id"]}
+    return prefix + "-replay-" + digest(encode(key)), specification

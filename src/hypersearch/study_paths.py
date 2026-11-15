@@ -134,7 +134,7 @@ def executable_boundary(core, tracked):
                         raise ValueError("redirected bytecode cache holds pinned source")
 
 
-def verify_sources(bundle, core_root, consumer_root):
+def verify_sources(bundle, core_root, consumer_root, required=None):
     instrument, consumer = bundle["instrument"], bundle["consumer"]
     core, tracked = checkout(core_root, instrument["commit"], instrument["repository"])
     consumer_root, consumer_tracked = checkout(consumer_root, consumer["commit"], consumer["repository"])
@@ -148,8 +148,8 @@ def verify_sources(bundle, core_root, consumer_root):
         if digest(plain_file(core, name).read_bytes()) != instrument["source_sha256"][name]:
             raise ValueError("instrument source digest mismatch")
     release = parse(plain_file(core, "governance/release.json").read_bytes())
-    required = {"hypersearch.study-manifest/v1", "hypersearch.study-bundle/v1",
-                "hypersearch.study-execution/v1", "hypersearch.study-receipt/v1"}
+    required = required or {"hypersearch.study-manifest/v1", "hypersearch.study-bundle/v1",
+                            "hypersearch.study-execution/v1", "hypersearch.study-receipt/v1"}
     if (type(release) is not dict or release.get("schema") != "hypersearch.release/v1"
             or release.get("status") not in {"development", "release-candidate", "released"}
             or release.get("api") != instrument["api"]

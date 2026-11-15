@@ -2,7 +2,8 @@
 import os
 import sys
 
-_PINNED = {"run-study", "replay-study", "register-review", "grant-review", "submit-review", "recover-review"}
+_PINNED = {"run-study", "replay-study", "run-census", "replay-census",
+           "register-review", "grant-review", "submit-review", "recover-review"}
 
 
 def _refuse(reason):

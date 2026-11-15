@@ -8,15 +8,16 @@ from .study_json import MAX_RECEIPT_BYTES, digest, encode, fields, integer, pars
 from .study_outcomes import outcome
 
 
-def validate_receipt(value):
+def validate_receipt(value, *, schema="hypersearch.study-receipt/v1", validate=validate_wrapper,
+                     identity=execution_identity, judge=outcome):
     fields(value, "schema execution execution_sha256 task_id outcome outcome_sha256 attempt runtime diagnostics replay_matches_parent")
-    if value["schema"] != "hypersearch.study-receipt/v1":
+    if value["schema"] != schema:
         raise ValueError("unsupported receipt schema")
-    execution = validate_wrapper(value["execution"])
-    task_id, specification = execution_identity(execution)
+    execution = validate(value["execution"])
+    task_id, specification = identity(execution)
     if value["task_id"] != task_id or value["execution_sha256"] != specification:
         raise ValueError("receipt task or full-wrapper identity mismatch")
-    outcome(value["outcome"], execution["bundle"])
+    judge(value["outcome"], execution["bundle"])
     if value["outcome_sha256"] != digest(encode(value["outcome"])):
         raise ValueError("receipt outcome digest mismatch")
     fields(value["attempt"], "worker fence")
@@ -35,12 +36,12 @@ def validate_receipt(value):
     return value
 
 
-def trusted_receipt(raw, expected_digest):
+def trusted_receipt(raw, expected_digest, *, validator=validate_receipt):
     # expected_digest must come from a separate committed manifest or Store row.
     sha(expected_digest)
     if digest(raw) != expected_digest:
         raise ValueError("receipt differs from external digest commitment")
-    return validate_receipt(parse(raw, MAX_RECEIPT_BYTES))
+    return validator(parse(raw, MAX_RECEIPT_BYTES))
 
 
 def export_receipt(value, directory, *, validator=validate_receipt):
