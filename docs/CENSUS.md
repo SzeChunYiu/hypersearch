@@ -56,6 +56,13 @@ Exits: 0 `CENSUS_EMPTY` (count is zero); 1 `CENSUS_NONEMPTY`; 2 refusal,
 unavailable grant, incomplete or failed execution, or replay mismatch. Require
 the printed `outcome_status`, not the exit code alone.
 
+Since 0.8.0 a completed census also prints `usage` (wall time, CPU time and
+peak resident memory of the verifier child), which is not in the receipt; the
+peak is `null` when it cannot be attributed to this child. See
+[frozen studies](STUDIES.md#resource-usage-in-the-printed-result--since-080).
+Exported census receipts can be re-verified with
+[`check-export --route census`](CHECK_EXPORT.md).
+
 ## Schemas
 
 All closed, with the strict JSON encoding of the study schemas.

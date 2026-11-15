@@ -6,11 +6,13 @@ import signal
 import subprocess
 import sys
 import tempfile
+import time
 from types import SimpleNamespace
 
 from . import program_contract as contract
 from . import study
 from .study_json import artifact_bytes, encode, parse
+from .study_usage import Meter, feed, reap
 
 # The bytes are compiled as source text whatever they look like, so an archive, bytecode or an
 # encoding declaration cannot change what runs. One expression: it executes in the real __main__
@@ -18,7 +20,7 @@ from .study_json import artifact_bytes, encode, parse
 BOOTSTRAP = "exec(compile(open(__import__('sys').argv[1], encoding='ascii').read(), 'program.py', 'exec'))"
 
 
-def run_program(bundle, core):
+def run_program(bundle, core, meter=None):
     """Run the bundled program bytes, never the consumer's working file, in an isolated interpreter.
 
     Isolation is from ambient imports, environment and bytecode. It is not a security sandbox:
@@ -27,6 +29,7 @@ def run_program(bundle, core):
     """
     limits = bundle["limits"]
     memory = limits["memory_megabytes"] * 1048576
+    meter = meter or Meter()
 
     def confine():
         resource.setrlimit(resource.RLIMIT_AS, (memory, memory))
@@ -40,12 +43,14 @@ def run_program(bundle, core):
         path = Path(work, "program.py")
         path.write_bytes(raw)
         with tempfile.TemporaryFile() as out, tempfile.TemporaryFile() as err:
+            started = time.monotonic()
             child = subprocess.Popen([sys.executable, "-B", "-I", "-S", "-c", BOOTSTRAP, str(path)],
                                      stdin=subprocess.PIPE, stdout=out,
                                      stderr=err, cwd=work, env={"PATH": os.defpath}, start_new_session=True,
                                      preexec_fn=confine)
-            try:
-                child.communicate(encode(bundle["question"]["arguments"]), timeout=limits["timeout_seconds"])
+            try:  # the input is at most 4 KiB, so writing it cannot block; wait4 gives the child's own usage
+                feed(child, encode(bundle["question"]["arguments"]))
+                reap(child, meter, started, limits["timeout_seconds"])
             except subprocess.TimeoutExpired:
                 return {"status": "INCOMPLETE", "verification": None}, "program timeout"
             finally:
@@ -53,7 +58,7 @@ def run_program(bundle, core):
                     os.killpg(child.pid, signal.SIGKILL)  # the program's process group, not what left it
                 except ProcessLookupError:
                     pass
-                child.wait()
+                reap(child, meter, started)
             out.seek(0); err.seek(0)
             if child.returncode != 0:
                 detail = err.read(4096).decode("utf-8", errors="replace")

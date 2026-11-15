@@ -113,3 +113,35 @@ software increment, not completion or director effectiveness evidence.
   old pins.
 - The demo command and the review workflow still report an unavailable task
   without saying why; left for a later change.
+
+## 0.8.0 development — export check and resource usage
+
+- New read-only command `check-export --route {study,census,program} --export
+  DIR [--export DIR ...] [--expected FILE]`. It re-verifies exported receipts
+  with the routes' existing validators: each file name against the digest of
+  its bytes, the committed encoding, exactly one original per study, and each
+  replay against a present original of the identical bundle with the
+  comparison recomputed. It opens no database and runs no verifier or
+  program. Exit 0 when everything holds, 1 on any problem, 2 on a refused
+  command line, launch or expected file.
+- New closed schema `hypersearch.expected-outcomes/v1`: a consumer's list of
+  studies with the outcome status, optionally the digest of the registered
+  part of a program's summary, and whether a matching replay is required.
+- `run-*` and `replay-*` print `usage` for a completed execution:
+  `wall_milliseconds`, `cpu_milliseconds` and `max_rss_kilobytes` of the
+  route's child process. Programs are now reaped with `wait4`, so the figures
+  are the program's own. **Usage is not in the receipt**: no receipt field,
+  schema, verifier or exit code changes, and `not_rerun` and `not_started`
+  carry no usage. Consumers that compare the printed object against an exact
+  set of keys must admit the new key.
+- Found in use: receipts recorded elapsed wall time only, so a slow program
+  could not be told from a busy host, and the mechanical re-check of a
+  family's receipts was done by hand.
+- A pinned program whose exit status is lost because something else reaped
+  it (a caller that ignores SIGCHLD) is now `EXECUTION_FAILED`; before, its
+  output was read as if it had exited 0. The command line is not affected.
+- Additive development contract. The version changes, so every frozen bundle
+  must name 0.8.0 with this commit; existing studies keep their old pins, and
+  their receipts are checked with the version that wrote them.
+- Planned, not in this change: a CPU-time limit and a family manifest; see
+  the roadmap.

@@ -88,8 +88,8 @@ Demo/study CLI acquires only its exact task. Generic Store queue order remains;
 there is no second scheduler. `db_max_attempts` is DB-global, not per study, and
 must match the database's original ceiling. Every grant remains charged after
 failure/timeout/lost reply. Lease duration is timeout plus explicit commit margin.
-Stale completion cannot commit/export. No CPU/memory/dollar accounting or hostile
-code sandbox is claimed.
+Stale completion cannot commit/export. No CPU/memory/dollar budget or hostile
+code sandbox is claimed; the usage printed since 0.8.0 is a measurement, not a limit.
 
 ## Outcomes and recovery
 
@@ -131,6 +131,54 @@ incomplete/failed execution or replay mismatch. Always inspect receipt scope.
 A start refused before any lease prints `"execution": "not_started"` with a
 `reason`, the database's `budget` and the `task_state` (since 0.7.1); see
 [pinned programs](PROGRAMS.md#outcomes).
+
+## Resource usage in the printed result — since 0.8.0
+
+A completed execution, whatever its outcome status, also prints
+
+```json
+"usage": {"wall_milliseconds": 1234, "cpu_milliseconds": 1180, "max_rss_kilobytes": 24816}
+```
+
+`not_rerun` and `not_started` results carry no `usage`. The figures describe
+the host, so they are **not in the receipt**, are not compared by a replay
+and are not printed again by `not_rerun`: keep the printed line if they are
+needed. They are integers because this JSON dialect has no other number.
+
+- **What is measured** is the route's one child process: the verifier child
+  of a study or census, the program of a pinned-program task. Wall time runs
+  from just before that child is started until it has been waited for.
+  Source checks, the database and the export are outside it; the receipt's
+  `elapsed_ms` is a wider interval.
+- `cpu_milliseconds` is user plus system CPU time of that child and of the
+  descendants it waited for itself. **A process the child started and did
+  not wait for is not counted**, whether or not it was killed with it.
+- `max_rss_kilobytes` is the peak resident set size, in kilobytes on Linux
+  (macOS reports bytes, which are converted; not tested there). A program
+  is reaped with `wait4`, so its figure is its own: the largest single
+  process among it and the descendants it waited for, not a sum. A verifier
+  child is reaped by `subprocess.run`, which leaves only the process-wide
+  mark over every child the command has waited for, its `git` checks
+  included; the figure is printed when this run raised that mark and is
+  `null` when it did not, because then it is not this child's.
+- **Linux carries the peak across `exec`**: a child's figure starts from the
+  memory it inherited from the launching process when it was started, about
+  twenty megabytes for this command. A value near that is the floor, not a
+  measurement of the child.
+- A timeout or a failure reports what the child used until it was killed.
+  When no child was waited for, the figures are 0, 0 and `null`.
+- A caller that runs several executions in one process shares the
+  verifier-child counters between them.
+
+Wall time far above CPU time for a single-threaded computation means the host
+was busy or the child waited; a timeout with CPU time near the limit means
+the computation is slow. See getrusage(2) and wait4(2).
+
+## Checking an export — since 0.8.0
+
+`check-export` re-verifies receipt directories of any of the three routes
+without running anything, and can hold them against outcomes registered
+beforehand. See [checking exported receipts](CHECK_EXPORT.md).
 
 ## Qualification
 

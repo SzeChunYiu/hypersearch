@@ -13,6 +13,27 @@ The objective is useful, reproducible discovery across domains. A completed soft
 | 6 — measured improvement | Policy portfolio and versioned evaluation program | Matched budgets/seeds, held-out families, valid-result throughput and false acceptance, independent review/rollback |
 | 7 — public releases | Docs, reproducibility bundles, contributor attribution and release signing | Community can reproduce a release without private access; license/provenance audit and consumer compatibility |
 
+## Planned for the frozen routes
+
+Not implemented. Both came from use of the pinned-program route on families
+of studies and need a new manifest version, so they are separate changes.
+
+- **A CPU-time limit in a v2 manifest.** The only time limit today is wall
+  time, so a busy host can turn a correct computation into `INCOMPLETE`, and a
+  consumer has to keep the host otherwise idle while a study runs. A limit on
+  the program's CPU time would make the outcome independent of host load.
+  The usage printed since 0.8.0 is the evidence for sizing it. Exit: a
+  program that needs more wall time than CPU time on a loaded host still
+  completes; one that exceeds its CPU limit is `INCOMPLETE` on any host.
+- **A family manifest with registered predictions and stop rules.** A family
+  of studies is today driven by consumer-written scripts, and its registered
+  outcomes are a file checked afterwards by `check-export`. A frozen family
+  manifest would name the studies, the outcome each is predicted to have and
+  the rule for stopping early, and the instrument would run the family and
+  report against it. Exit: a family runs from one frozen file with no
+  consumer driver, and a prediction that fails is reported at the study where
+  it fails.
+
 ## Priorities
 
 Build the evidence kernel before expanding autonomy. Establish a public mathematics benchmark before adding paid or distributed infrastructure. Deliver one empirical adapter before claiming implemented domain neutrality. Preserve exploratory flexibility without allowing exploration to weaken the certifier. Maintain separate research and infrastructure queues, reserving capacity for independent review and replication.
