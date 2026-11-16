@@ -75,11 +75,13 @@ The task id is the one a refused start prints; the fence is in
   task, a pending task and a stale fence are refused);
 - refuses unless the lease recorded its holder and that holder is dead.
   Since 0.9.0 each lease a frozen route takes records the launcher: process
-  id, start time, kernel boot id and host name. The holder is **alive** while
+  id, start time, kernel boot id, process-id namespace and host name. The holder is **alive** while
   a process with that id and start time runs on this host and boot; a
   reused process id has another start time and is not the holder; a zombie
   is dead; another boot id means the host was restarted, so it is dead.
-  Another host name, or no `/proc`, is **unknown** and refused. A lease
+  Another host name, another process-id namespace, a process that `/proc`
+  hides (`hidepid`) but the kernel still has, or no `/proc`, is **unknown**
+  and refused. A lease
   without a record (taken by an earlier release, the demo or the review
   workflow) is refused: it can only expire;
 - then, in one transaction, returns the task to `pending` and appends an

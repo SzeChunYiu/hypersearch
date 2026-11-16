@@ -43,11 +43,11 @@ def _holder(value):
     """The process that holds a lease, as holders.identity() records it; None records nobody."""
     if value is None:
         return None
-    if (type(value) is not dict or set(value) != {"pid", "started", "boot", "host"}
+    if (type(value) is not dict or set(value) != {"pid", "started", "boot", "pidns", "host"}
             or type(value["pid"]) is not int or value["pid"] < 1
             or type(value["started"]) is not int or value["started"] < 0):
-        raise ValueError("holder must be a pid, a start time, a boot id and a host")
-    _name(value["boot"]); _name(value["host"])
+        raise ValueError("holder must be a pid, a start time, a boot id, a pid namespace and a host")
+    _name(value["boot"]); _name(value["pidns"]); _name(value["host"])
     return canonical_json(value)
 
 

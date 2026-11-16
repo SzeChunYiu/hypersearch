@@ -92,11 +92,25 @@ class GuardTests(unittest.TestCase):
 class HolderTests(unittest.TestCase):
     def test_this_process_is_alive_and_a_changed_identity_is_not_it(self):
         me = holders.identity()
-        self.assertEqual(set(me), {"pid", "started", "boot", "host"})
+        self.assertEqual(set(me), {"pid", "started", "boot", "pidns", "host"})
         self.assertEqual((me["pid"], holders.state(me)), (os.getpid(), "alive"))
         self.assertEqual(holders.state({**me, "started": me["started"] + 1}), "dead")   # a reused process id
         self.assertEqual(holders.state({**me, "boot": "another-boot"}), "dead")          # rebooted since
         self.assertEqual(holders.state({**me, "host": me["host"] + "-other"}), "unknown")
+        self.assertEqual(holders.state({**me, "pidns": "pid:[0]"}), "unknown")   # another process-id namespace
+
+    def test_a_process_proc_hides_is_unknown_and_one_the_kernel_lacks_is_dead(self):
+        me = holders.identity()
+        hidden = PermissionError(1, "Operation not permitted")
+        with patch.object(holders, "_stat", return_value=None):           # /proc mounted with hidepid
+            with patch.object(holders.os, "kill", side_effect=hidden):
+                self.assertEqual(holders.state(me), "unknown")
+            with patch.object(holders.os, "kill", side_effect=ProcessLookupError):
+                self.assertEqual(holders.state(me), "dead")
+
+    def test_an_empty_host_name_records_nothing(self):
+        with patch.object(holders.socket, "gethostname", return_value=""):
+            self.assertIsNone(holders.identity())
 
     def test_an_exited_or_unreaped_process_is_dead(self):
         child = subprocess.Popen([sys.executable, "-I", "-c", "pass"])

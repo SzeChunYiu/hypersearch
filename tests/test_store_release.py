@@ -7,7 +7,7 @@ import unittest
 
 from hypersearch.store import Store, StaleLease
 
-HOLDER = {"pid": 4321, "started": 99, "boot": "synthetic-boot", "host": "synthetic-host"}
+HOLDER = {"pid": 4321, "started": 99, "boot": "synthetic-boot", "pidns": "pid:[1]", "host": "synthetic-host"}
 # The table definitions of 0.8.0. An earlier release opening a newer database sees exactly these.
 EARLIER_TABLES = {
     "budget": "CREATE TABLE budget (id INTEGER PRIMARY KEY CHECK(id=1), maximum INTEGER NOT NULL, spent INTEGER NOT NULL)",

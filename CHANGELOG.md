@@ -173,10 +173,16 @@ software increment, not completion or director effectiveness evidence.
   with it. The child's own descendants are not covered.
 - New command `abandon-attempt --db --task --fence --reason`. Leases taken by
   the frozen routes record their holder (process id, start time, boot id,
-  host). The command frees a lease only when that holder is dead, appends an
+  process-id namespace, host). The command frees a lease only when that holder is dead, appends an
   `abandoned` event, keeps the attempt charged, and never deletes results,
   events, receipts or exports. It refuses a live, unrecorded or uncheckable
-  holder, a stale fence and a pending or completed task.
+  holder, a stale fence and a pending or completed task. A holder in another
+  process-id namespace, or one whose `/proc` entry is hidden (`hidepid`) but
+  which the kernel still has, is unknown and refused; with an empty host
+  name nothing is recorded and launches run as before.
+- Independent review fixes: a stop that lands after the program is reaped
+  but before its return code is set is a stop, not an `EXECUTION_FAILED`
+  receipt; the namespace and hidden-`/proc` cases above were read as dead.
 - Store: new table `event_details`; the earlier tables keep their
   definitions, so 0.8.0 opens a 0.9.0 database and grants a released task.
   `status` prints each event's `detail`. New `Store.existing`,
