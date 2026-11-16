@@ -80,7 +80,8 @@ The task id is the one a refused start prints; the fence is in
   reused process id has another start time and is not the holder; a zombie
   is dead; another boot id means the host was restarted, so it is dead.
   Another host name, another process-id namespace, a process that `/proc`
-  hides (`hidepid`) but the kernel still has, or no `/proc`, is **unknown**
+  hides (`hidepid`) but the kernel still has, a `/proc` of another
+  namespace, or no `/proc`, is **unknown**
   and refused. A lease
   without a record (taken by an earlier release, the demo or the review
   workflow) is refused: it can only expire;

@@ -178,7 +178,8 @@ software increment, not completion or director effectiveness evidence.
   events, receipts or exports. It refuses a live, unrecorded or uncheckable
   holder, a stale fence and a pending or completed task. A holder in another
   process-id namespace, or one whose `/proc` entry is hidden (`hidepid`) but
-  which the kernel still has, is unknown and refused; with an empty host
+  which the kernel still has, is unknown and refused, as is any check made
+  through a `/proc` mounted from another process-id namespace; with an empty host
   name nothing is recorded and launches run as before.
 - Independent review fixes: a stop that lands after the program is reaped
   but before its return code is set is a stop, not an `EXECUTION_FAILED`

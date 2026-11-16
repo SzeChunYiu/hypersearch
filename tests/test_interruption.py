@@ -108,6 +108,15 @@ class HolderTests(unittest.TestCase):
             with patch.object(holders.os, "kill", side_effect=ProcessLookupError):
                 self.assertEqual(holders.state(me), "dead")
 
+    def test_a_proc_of_another_namespace_records_nothing_and_knows_nothing(self):
+        me = holders.identity()
+        real = os.readlink
+        foreign = lambda path: "1" if str(path) == str(holders.PROC / "self") else real(path)
+        with patch.object(holders.os, "readlink", foreign):
+            self.assertIsNone(holders.identity())
+            self.assertEqual(holders.state(me), "unknown")
+        self.assertEqual(holders.state({k: v for k, v in me.items() if k != "pidns"}), "unknown")
+
     def test_an_empty_host_name_records_nothing(self):
         with patch.object(holders.socket, "gethostname", return_value=""):
             self.assertIsNone(holders.identity())

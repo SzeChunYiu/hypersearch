@@ -30,6 +30,9 @@ def _boot():
 
 
 def _namespace():
+    """This process's process-id namespace, read through a /proc that belongs to it."""
+    if os.readlink(PROC / "self") != str(os.getpid()):
+        raise OSError("/proc was mounted from another process-id namespace")
     return os.readlink(PROC / "self/ns/pid")
 
 
@@ -48,9 +51,9 @@ def identity(pid=None):
     """The holder record of a process (this one by default), or None where it cannot be read."""
     pid = os.getpid() if pid is None else pid
     try:
+        namespace = _namespace()                # first: it proves /proc numbers processes as we do
         stat = _stat(pid)
         boot = _boot()
-        namespace = _namespace()
     except (OSError, ValueError, IndexError):
         return None
     host = socket.gethostname()
@@ -71,7 +74,7 @@ def state(holder):
         return "unknown"
     if boot != holder["boot"]:
         return "dead"                           # the host was restarted since the lease was granted
-    if namespace != holder["pidns"]:
+    if namespace != holder.get("pidns"):
         return "unknown"                        # the same number names another process there
     try:
         stat = _stat(holder["pid"])
