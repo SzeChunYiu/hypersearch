@@ -135,7 +135,7 @@ class ExportCheckTests(unittest.TestCase):
         emitted = {text for text in emitted if type(text) is str and " " in text}
         page = (Path(__file__).resolve().parents[1] / "docs/CHECK_EXPORT.md").read_text()
         documented = set(re.findall(r"^\| `([^`]+)` \| [a-z ]+ \| (?:top|study) \|$", page, re.M))
-        self.assertEqual((emitted, len(emitted)), (documented, 22))
+        self.assertEqual((emitted, len(emitted)), (documented, 23))
 
     def test_a_replay_is_held_against_a_present_original_of_the_same_bundle(self):
         original, replay = self.family[FIRST]

@@ -9,7 +9,7 @@ import tempfile
 import time
 from types import SimpleNamespace
 
-from . import program_contract as contract
+from . import program_contract
 from . import study
 from .interruption import Interrupted, held, parent_death
 from .study_json import artifact_bytes, encode, parse
@@ -21,13 +21,14 @@ from .study_usage import Meter, feed, reap
 BOOTSTRAP = "exec(compile(open(__import__('sys').argv[1], encoding='ascii').read(), 'program.py', 'exec'))"
 
 
-def run_program(bundle, core, meter=None):
+def run_program(bundle, core, meter=None, contract=program_contract):
     """Run the bundled program bytes, never the consumer's working file, in an isolated interpreter.
 
     Isolation is from ambient imports, environment and bytecode. It is not a security sandbox:
     the program runs with the operator's file and network access, and a process it moves out of
     its process group outlives the timeout. A stop signal (see interruption.py) ends the run with
-    the group killed; on Linux the program also dies with the thread that started it.
+    the group killed; on Linux the program also dies with the thread that started it. `contract`
+    says how the output is read: a verdict here, observations for the exploration route.
     """
     limits = bundle["limits"]
     memory = limits["memory_megabytes"] * 1048576
@@ -86,10 +87,11 @@ def run_program(bundle, core, meter=None):
 
 def program_route():
     return SimpleNamespace(
-        validate_wrapper=contract.validate_wrapper, execution_identity=contract.execution_identity,
-        wrapper=contract.wrapper, validate_receipt=contract.validate_receipt,
-        trusted_receipt=contract.trusted_receipt, run=run_program, outcome=contract.outcome,
-        receipt_schema="hypersearch.program-receipt/v1", worker="local-pinned-program", required=contract.SCHEMAS,
+        validate_wrapper=program_contract.validate_wrapper, execution_identity=program_contract.execution_identity,
+        wrapper=program_contract.wrapper, validate_receipt=program_contract.validate_receipt,
+        trusted_receipt=program_contract.trusted_receipt, run=run_program, outcome=program_contract.outcome,
+        receipt_schema="hypersearch.program-receipt/v1", worker="local-pinned-program",
+        required=program_contract.SCHEMAS,
         exits={"PROGRAM_HOLDS": 0, "PROGRAM_FAILS": 1}, commands=("run-program", "replay-program"))
 
 
