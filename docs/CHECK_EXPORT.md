@@ -192,6 +192,8 @@ refused by run and replay; an expected file that is `null` or over 1 MiB.
 Each check was removed in turn in a scratch copy to confirm that a test
 fails.
 
-Tests pass on Python 3.11, 3.12 and 3.13. One independent review; its
-findings are addressed in this change, which has not been reviewed again.
+Tests pass on Python 3.11, 3.12 and 3.13. Two reviews by one separate
+session started by the author: the first found defects, all addressed; the
+second confirmed the fixes and asked only for this wording. Not independent
+certification.
 Linux only. No research executed, no claim promoted.

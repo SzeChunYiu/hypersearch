@@ -186,7 +186,8 @@ studies keep their pins. No research executed.
   [PROGRAMS.md](PROGRAMS.md).
 - Export check and resource usage (0.8.0 development): see the status
   section of [CHECK_EXPORT.md](CHECK_EXPORT.md) and the usage section of
-  [STUDIES.md](STUDIES.md). One independent review; its findings are
-  addressed, and the fixes have not been reviewed again.
+  [STUDIES.md](STUDIES.md). Reviewed twice by one separate session started
+  by the author (defects found and fixed, then confirmed); not independent
+  certification.
 
 None of these executes research here, promotes a claim or lifts a consumer hold.
