@@ -33,7 +33,7 @@ class EarlierReleaseTests(unittest.TestCase):
     def test_the_earlier_releases_are_reviewed_whenever_the_version_changes(self):
         # A tripwire, not a property: a new version fails here until EARLIER has been reviewed against the
         # receipt validators of the releases it names, and extended or emptied (see docs/CHECK_EXPORT.md).
-        self.assertEqual((__version__, EARLIER), ("0.9.0", frozenset({"0.7.0", "0.7.1", "0.8.0"})))
+        self.assertEqual((__version__, EARLIER), ("0.10.0", frozenset({"0.7.0", "0.7.1", "0.8.0", "0.9.0"})))
 
     def test_receipts_written_by_an_earlier_release_are_checked_in_full(self):
         for original, replay in self.old.values():
