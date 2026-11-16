@@ -106,3 +106,17 @@ implementation's finite computation, not a proof.
 isolated interpreter under the same frozen route, and records its small JSON
 output with a receipt and a replay. The instrument does not check the
 program's logic. See [pinned programs](docs/PROGRAMS.md).
+
+## Export check and resource usage — 0.8.0 development
+
+`check-export --route {study,census,program} --export DIR [--export DIR ...]
+[--expected FILE]` re-verifies directories of exported receipts with the
+routes' own validators: file names against contents, one original per study,
+every replay against a present original, and optionally the outcomes a
+consumer registered beforehand. It runs and writes nothing and accepts no
+claim. See [checking exported receipts](docs/CHECK_EXPORT.md).
+
+The `run-*` and `replay-*` commands also print the wall time, CPU time and
+peak resident memory of the child they ran. These figures are in the printed
+result only, never in a receipt. See
+[frozen studies](docs/STUDIES.md#resource-usage-in-the-printed-result--since-080).

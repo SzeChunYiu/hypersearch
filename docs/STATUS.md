@@ -184,5 +184,10 @@ studies keep their pins. No research executed.
   [CENSUS.md](CENSUS.md).
 - Pinned-program tasks (0.7.0 development): see the status section of
   [PROGRAMS.md](PROGRAMS.md).
+- Export check and resource usage (0.8.0 development): see the status
+  section of [CHECK_EXPORT.md](CHECK_EXPORT.md) and the usage section of
+  [STUDIES.md](STUDIES.md). Reviewed twice by one separate session started
+  by the author (defects found and fixed, then confirmed); not independent
+  certification.
 
-Neither executes research here, promotes a claim or lifts a consumer hold.
+None of these executes research here, promotes a claim or lifts a consumer hold.

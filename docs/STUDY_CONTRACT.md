@@ -53,6 +53,10 @@ wrapper: identical requests are idempotent; changed parent/bundle is a conflict
 before grants, including concurrent requests. A different ID is an independent
 attempt identity. The full wrapper SHA256 remains the immutable Store spec digest.
 
+`hypersearch.expected-outcomes/v1`, a consumer's registered outcomes for
+`check-export`, is not part of any bundle or receipt; see
+[checking exported receipts](CHECK_EXPORT.md).
+
 ## hypersearch.study-receipt/v1
 
 Fields: schema, execution (complete wrapper), execution_sha256, task_id, outcome, outcome_sha256,

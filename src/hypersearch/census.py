@@ -5,9 +5,9 @@ from . import census_contract as contract
 from . import study
 
 
-def run_census(bundle, core):
+def run_census(bundle, core, meter=None):
     """Bounded trusted child; the parent interprets and rechecks its output."""
-    return study.run_child(bundle, core, "hypersearch.census_worker", contract.verification)
+    return study.run_child(bundle, core, "hypersearch.census_worker", contract.verification, meter)
 
 
 def census_route():

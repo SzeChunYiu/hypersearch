@@ -4,6 +4,7 @@ import hashlib
 import json
 from pathlib import Path
 import platform
+import signal
 import sqlite3
 import subprocess
 import sys
@@ -71,11 +72,17 @@ def main(argv=None):
             study.add_argument("--receipt", required=True)
             study.add_argument("--expected-receipt-sha256", required=True)
             study.add_argument("--replay-id", required=True)
+    check = sub.add_parser("check-export", help="re-verify directories of exported receipts; runs and writes nothing")
+    check.add_argument("--route", required=True, choices=("study", "census", "program"))
+    check.add_argument("--export", required=True, action="append", help="a receipt directory; repeat for several")
+    check.add_argument("--expected", help="a consumer's hypersearch.expected-outcomes/v1 file")
     from .review_cli import arguments as review_arguments
     review_arguments(sub)
     args = parser.parse_args(argv)
     try:
-        if args.command.endswith(("-review", "-study", "-census", "-program")):
+        if args.command.endswith(("-review", "-study", "-census", "-program", "-export")):
+            if signal.getsignal(signal.SIGCHLD) == signal.SIG_IGN:  # inherited across exec, it loses every exit status
+                signal.signal(signal.SIGCHLD, signal.SIG_DFL)
             from .study_paths import launch_boundary
             launch_boundary(Path(__file__).resolve().parents[2])
         if args.command.endswith("-review"):
@@ -90,6 +97,9 @@ def main(argv=None):
         if args.command in ("run-program", "replay-program"):
             from .program import main as program_main
             return program_main(args)
+        if args.command == "check-export":
+            from .export_check import main as check_main
+            return check_main(args)
         if args.command in ("verify", "verify-multiwise"):
             path = Path(args.certificate)
             if path.stat().st_size > 65536:

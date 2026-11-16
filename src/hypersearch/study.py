@@ -14,6 +14,7 @@ from .study_json import MAX_BUNDLE_BYTES, MAX_RECEIPT_BYTES, digest, encode, par
 from .study_outcomes import outcome, verification
 from .study_paths import output_paths, verify_sources
 from .study_receipts import export_receipt, trusted_receipt, validate_receipt
+from .study_usage import Meter, waited_children
 
 CORE_ROOT = Path(__file__).resolve().parents[2]
 
@@ -27,22 +28,23 @@ def study_route():
         exits={"VERIFIED_WITNESS": 0, "REFUTED_WITNESS": 1}, commands=("run-study", "replay-study"))
 
 
-def run_verifier(bundle, core):
+def run_verifier(bundle, core, meter=None):
     """Bounded trusted child, isolated from ambient imports and credentials."""
-    return run_child(bundle, core, "hypersearch.study_worker", verification)
+    return run_child(bundle, core, "hypersearch.study_worker", verification, meter)
 
 
-def run_child(bundle, core, module, interpret):
+def run_child(bundle, core, module, interpret, meter=None):
     """Run one fixed bundled worker module; its output is interpreted by the parent."""
     environment = {"PATH": os.defpath, "PYTHONPATH": str(core / "src"),
                    "PYTHONNOUSERSITE": "1", "PYTHONDONTWRITEBYTECODE": "1"}
     with tempfile.TemporaryDirectory(prefix="hypersearch-study-") as work:
         with tempfile.TemporaryFile() as out, tempfile.TemporaryFile() as err:
             try:
-                result = subprocess.run(
-                    [sys.executable, "-B", "-S", "-P", "-X", "pycache_prefix=" + work + "/bytecode",
-                     "-m", module], input=encode(bundle), stdout=out, stderr=err,
-                    cwd=work, env=environment, timeout=bundle["limits"]["timeout_seconds"], check=False)
+                with waited_children(meter or Meter()):  # subprocess.run reaps the child itself
+                    result = subprocess.run(
+                        [sys.executable, "-B", "-S", "-P", "-X", "pycache_prefix=" + work + "/bytecode",
+                         "-m", module], input=encode(bundle), stdout=out, stderr=err,
+                        cwd=work, env=environment, timeout=bundle["limits"]["timeout_seconds"], check=False)
             except subprocess.TimeoutExpired:
                 return {"status": "INCOMPLETE", "verification": None}, "verifier timeout"
             out.seek(0); err.seek(0)
@@ -107,11 +109,12 @@ def execute(execution, *, consumer_root, database, export, inputs=(), parent_rec
         return {"execution": "not_started", "task_id": task_id, "budget": budget, "task_state": state, "reason": reason}
     started = time.monotonic()
     diagnostics = ""
+    meter = Meter()  # host-dependent, so it goes to the printed result and never into the receipt
     try:
         frozen = route.validate_wrapper(parse(lease.spec_json.encode()))
         if frozen != execution:
             raise ValueError("leased execution differs from admitted wrapper")
-        result, diagnostics = route.run(frozen["bundle"], core)
+        result, diagnostics = route.run(frozen["bundle"], core, meter)
         route.outcome(result, frozen["bundle"])
     except (ValueError, TypeError, KeyError, OSError, subprocess.SubprocessError, RecursionError) as error:
         result = {"status": "EXECUTION_FAILED", "verification": None}
@@ -132,7 +135,8 @@ def execute(execution, *, consumer_root, database, export, inputs=(), parent_rec
         raise ValueError("stored result encoding identity mismatch")
     path = export_receipt(receipt, export, validator=route.validate_receipt)
     return {"execution": "completed", "receipt_sha256": result_digest, "receipt_path": str(path),
-            "outcome_status": result["status"], "replay_matches_parent": receipt["replay_matches_parent"]}
+            "outcome_status": result["status"], "replay_matches_parent": receipt["replay_matches_parent"],
+            "usage": meter.report()}
 
 
 def main(args, route=None):

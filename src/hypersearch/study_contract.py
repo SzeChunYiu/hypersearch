@@ -1,4 +1,6 @@
 """Closed frozen-study admission; never execute candidates during validation."""
+from contextvars import ContextVar
+
 from . import __version__
 from .math_adapter import validate_certificate as ordinary_admission
 from .multiwise import validate_certificate as multiwise_admission
@@ -8,6 +10,9 @@ REPOSITORY = "https://github.com/SzeChunYiu/hypersearch.git"
 VERIFIERS = {"ordinary-witness": "hypersearch.zero-sum-subsets/v1",
              "multiwise-witness": "hypersearch.multiwise-subsets/v1"}
 ARTIFACTS = {"study_manifest", "preregistration", "claim_record", "certificate"}
+# Earlier releases whose receipts these validators read unchanged. Only check-export sets it, and only
+# around a receipt it reads; run and replay never see it, so nothing executes under an earlier version.
+READ_RELEASES = ContextVar("read_releases", default=frozenset())
 
 
 def admit_common(value, schema, names):
@@ -23,8 +28,9 @@ def admit_common(value, schema, names):
     for key in ("claim_record_sha256", "preregistration_sha256", "entrypoint_sha256"):
         sha(consumer[key])
     fields(instrument, "repository commit release_version api verifier source_sha256")
-    if (instrument["repository"] != REPOSITORY or instrument["release_version"] != __version__
-            or instrument["api"] != "hypersearch.api/v1"):
+    release = instrument["release_version"]  # compared by type first: an unhashable value is refused, not a TypeError
+    if (instrument["repository"] != REPOSITORY or type(release) is not str
+            or release not in {__version__, *READ_RELEASES.get()} or instrument["api"] != "hypersearch.api/v1"):
         raise ValueError("unsupported instrument identity")
     sha(instrument["commit"], 40)
     sources = instrument["source_sha256"]

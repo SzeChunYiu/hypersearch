@@ -100,6 +100,24 @@ PYTHONPATH=src python -B -S -P -X pycache_prefix="$CACHE" -m hypersearch run-pro
 `replay-program` takes `--receipt`, `--expected-receipt-sha256` and
 `--replay-id`.
 
+Since 0.8.0 a completed run or replay also prints `usage`: wall time, CPU
+time and peak resident memory of the program and of the processes it waited
+for, measured with `wait4` and therefore the program's own. It is not in the
+receipt. A process the program started and did not wait for is not counted,
+and on Linux the peak starts from memory inherited from the launching
+process, so values near twenty megabytes are a floor. `memory_megabytes`
+limits address space, which is at least the resident size: the peak is a
+lower bound for that limit, not a setting. Details are in
+[frozen studies](STUDIES.md#resource-usage-in-the-printed-result--since-080).
+A family's receipts can be re-verified afterwards, and held against outcomes
+registered before the run, with [`check-export`](CHECK_EXPORT.md).
+
+An ignored SIGCHLD, which a launcher can pass on across `exec`, would let
+the kernel discard the program's exit status. The command line restores the
+default before anything runs. A library caller that ignores SIGCHLD gets
+`EXECUTION_FAILED` for a program whose status was lost, and `INCOMPLETE`
+for a timeout; a lost status is never read as exit 0.
+
 ## Schemas
 
 All closed, with the strict JSON encoding of the study schemas.
