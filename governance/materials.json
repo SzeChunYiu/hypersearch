@@ -440,6 +440,12 @@
       "lifecycle": "active"
     },
     {
+      "path": "tests/test_interruption.py",
+      "owner": "quality-maintainers",
+      "role": "test",
+      "lifecycle": "active"
+    },
+    {
       "path": "tests/test_math_adapter.py",
       "owner": "quality-maintainers",
       "role": "test",
@@ -456,6 +462,12 @@
       "owner": "quality-maintainers",
       "role": "test",
       "lifecycle": "experimental"
+    },
+    {
+      "path": "tests/test_program_interruption.py",
+      "owner": "quality-maintainers",
+      "role": "test",
+      "lifecycle": "active"
     },
     {
       "path": "tests/test_program_reaping.py",
@@ -477,6 +489,12 @@
     },
     {
       "path": "tests/test_store.py",
+      "owner": "quality-maintainers",
+      "role": "test",
+      "lifecycle": "active"
+    },
+    {
+      "path": "tests/test_store_release.py",
       "owner": "quality-maintainers",
       "role": "test",
       "lifecycle": "active"
