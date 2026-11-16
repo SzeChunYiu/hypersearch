@@ -128,6 +128,12 @@
       "lifecycle": "active"
     },
     {
+      "path": "docs/STOPPING.md",
+      "owner": "documentation-maintainers",
+      "role": "documentation",
+      "lifecycle": "experimental"
+    },
+    {
       "path": "docs/STUDIES.md",
       "owner": "documentation-maintainers",
       "role": "documentation",
@@ -258,6 +264,18 @@
       "owner": "core-maintainers",
       "role": "code",
       "lifecycle": "active"
+    },
+    {
+      "path": "src/hypersearch/holders.py",
+      "owner": "core-maintainers",
+      "role": "code",
+      "lifecycle": "experimental"
+    },
+    {
+      "path": "src/hypersearch/interruption.py",
+      "owner": "core-maintainers",
+      "role": "code",
+      "lifecycle": "experimental"
     },
     {
       "path": "src/hypersearch/math_adapter.py",

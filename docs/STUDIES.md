@@ -87,7 +87,8 @@ filesystem safety, not protection against concurrent privileged mutation.
 Demo/study CLI acquires only its exact task. Generic Store queue order remains;
 there is no second scheduler. `db_max_attempts` is DB-global, not per study, and
 must match the database's original ceiling. Every grant remains charged after
-failure/timeout/lost reply. Lease duration is timeout plus explicit commit margin.
+failure/timeout/lost reply/stop. Lease duration is timeout plus explicit commit margin;
+a stopped launch releases it at once ([stopping a launch](STOPPING.md), since 0.9.0).
 Stale completion cannot commit/export. No CPU/memory/dollar budget or hostile
 code sandbox is claimed; the usage printed since 0.8.0 is a measurement, not a limit.
 

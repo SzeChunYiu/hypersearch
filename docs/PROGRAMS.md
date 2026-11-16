@@ -46,8 +46,10 @@ example by requiring two independently written programs to agree.
   one per replay run there, every bundle using it must name the same ceiling,
   and a second database counts separately.
   A written file is capped at 1 MiB; the number of files is not capped.
-- When the program ends or times out, **its process group is killed**. A
-  process the program deliberately moves out of that group survives.
+- When the program ends, times out or the launch is stopped, **its process
+  group is killed**. A process the program deliberately moves out of that
+  group survives. On Linux the program also dies with its launcher; see
+  [stopping a launch](STOPPING.md).
 
 This is isolation from accidental inputs, **not a security sandbox**. The
 program runs with the operator's file and network access. Run only programs
@@ -64,7 +66,8 @@ being admitted (run the command again for its receipt as `not_rerun`). It also
 prints the `budget` (`maximum`, `spent`) and the stored `task_state`, read
 after the refusal. When the ceiling is spent and the task is also held, the
 ceiling is named. `running` includes a lease whose holder died; it is
-reclaimed after expiry if the ceiling has room. A refused start charges
+reclaimed after expiry if the ceiling has room, or at once with
+`abandon-attempt` (since 0.9.0, [stopping a launch](STOPPING.md)). A refused start charges
 nothing and writes no receipt, but the task (for a replay, its replay ID)
 stays registered as pending in that database. The supplied-witness and census
 routes print the same object; the reason, budget and state are new in 0.7.1.

@@ -1,7 +1,8 @@
 """Single-host cooperative task queue, not an authentication or sandbox boundary.
 
-Each acquire permanently spends one attempt, including crashes and expired leases.
-Lease fencing protects queue commits; it cannot fence external side effects.
+Each acquire permanently spends one attempt, including crashes, expired, interrupted
+and abandoned leases. Lease fencing protects queue commits; it cannot fence external
+side effects. Events and results are only ever appended.
 Use a local filesystem, not a shared/network SQLite file. Wall-clock jumps may
 expire work early or delay reclamation; fencing still rejects superseded leases.
 """
@@ -11,6 +12,7 @@ from dataclasses import dataclass
 import hashlib
 import json
 import math
+from pathlib import Path
 import sqlite3
 import time
 
@@ -35,6 +37,18 @@ def _name(value):
     if not isinstance(value, str) or not value.strip() or len(value) > 256:
         raise ValueError("identifier must be a nonempty string of at most 256 characters")
     return value
+
+
+def _holder(value):
+    """The process that holds a lease, as holders.identity() records it; None records nobody."""
+    if value is None:
+        return None
+    if (type(value) is not dict or set(value) != {"pid", "started", "boot", "host"}
+            or type(value["pid"]) is not int or value["pid"] < 1
+            or type(value["started"]) is not int or value["started"] < 0):
+        raise ValueError("holder must be a pid, a start time, a boot id and a host")
+    _name(value["boot"]); _name(value["host"])
+    return canonical_json(value)
 
 
 @dataclass(frozen=True)
@@ -62,20 +76,38 @@ class Store:
     supply evidence. All callers sharing this file are assumed cooperative.
     """
 
-    def __init__(self, path, max_attempts=100, *, clock=time.time):
+    def __init__(self, path, max_attempts=100, *, clock=time.time, holder=None):
         if type(max_attempts) is not int or max_attempts < 1:
             raise ValueError("max_attempts must be a positive integer")
         if str(path) == ":memory:":
             raise ValueError("a durable local database path is required")
-        self.path, self.clock = str(path), clock
+        self.path, self.clock, self.holder = str(path), clock, _holder(holder)
         with self._transaction() as db:
             db.execute("CREATE TABLE IF NOT EXISTS budget (id INTEGER PRIMARY KEY CHECK(id=1), maximum INTEGER NOT NULL, spent INTEGER NOT NULL)")
             db.execute("CREATE TABLE IF NOT EXISTS tasks (id TEXT PRIMARY KEY, spec TEXT NOT NULL, digest TEXT NOT NULL, state TEXT NOT NULL, worker TEXT, fence INTEGER NOT NULL DEFAULT 0, expires REAL)")
             db.execute("CREATE TABLE IF NOT EXISTS results (task_id TEXT PRIMARY KEY REFERENCES tasks(id), fence INTEGER NOT NULL, result TEXT NOT NULL, digest TEXT NOT NULL)")
             db.execute("CREATE TABLE IF NOT EXISTS events (sequence INTEGER PRIMARY KEY AUTOINCREMENT, kind TEXT NOT NULL, task_id TEXT NOT NULL, fence INTEGER NOT NULL, time REAL NOT NULL)")
+            # Since 0.9.0, beside the earlier tables, which keep their definitions so earlier releases still open the file.
+            db.execute("CREATE TABLE IF NOT EXISTS event_details (sequence INTEGER PRIMARY KEY REFERENCES events(sequence), detail TEXT NOT NULL)")
             db.execute("INSERT OR IGNORE INTO budget VALUES (1, ?, 0)", (max_attempts,))
             if db.execute("SELECT maximum FROM budget WHERE id=1").fetchone()[0] != max_attempts:
                 raise ValueError("existing budget differs; budgets cannot silently reset")
+
+    @classmethod
+    def existing(cls, path, *, clock=time.time, holder=None):
+        """Open a task database that already exists, with the attempt ceiling it was created with."""
+        if not Path(path).is_file():
+            raise ValueError("task database does not exist")
+        db = sqlite3.connect(path, timeout=30)
+        try:
+            maximum = db.execute("SELECT maximum FROM budget WHERE id=1").fetchone()
+        except sqlite3.Error:
+            maximum = None
+        finally:
+            db.close()
+        if maximum is None:
+            raise ValueError("not a task database")
+        return cls(path, maximum[0], clock=clock, holder=holder)
 
     @contextmanager
     def _transaction(self):
@@ -91,6 +123,12 @@ class Store:
             raise
         finally:
             db.close()
+
+    def _event(self, db, kind, task_id, fence, now, detail=None):
+        sequence = db.execute("INSERT INTO events(kind,task_id,fence,time) VALUES(?,?,?,?)",
+                              (kind, task_id, fence, now)).lastrowid
+        if detail is not None:
+            db.execute("INSERT INTO event_details VALUES(?,?)", (sequence, detail))
 
     def _now(self):
         now = self.clock()
@@ -135,10 +173,12 @@ class Store:
                 raise ValueError("lease expiry overflow")
             db.execute("UPDATE tasks SET state='running',worker=?,fence=?,expires=? WHERE id=?", (worker, fence, expires, row["id"]))
             db.execute("UPDATE budget SET spent=spent+1 WHERE id=1")
-            db.execute("INSERT INTO events(kind,task_id,fence,time) VALUES('acquired',?,?,?)", (row["id"], fence, now))
+            self._event(db, "acquired", row["id"], fence, now,
+                        None if self.holder is None else '{"holder":' + self.holder + "}")
             return Lease(row["id"], worker, fence, expires, row["spec"], row["digest"])
 
-    def complete(self, lease, result):
+    @staticmethod
+    def _check(lease):
         if not isinstance(lease, Lease):
             raise ValueError("Lease required")
         _name(lease.task_id)
@@ -147,22 +187,75 @@ class Store:
             raise ValueError("lease fence must be a positive integer")
         if isinstance(lease.expires_at, bool) or not isinstance(lease.expires_at, (int, float)) or not math.isfinite(lease.expires_at):
             raise ValueError("lease expiry must be finite")
+
+    @staticmethod
+    def _held(db, lease):
+        """The task row while this lease is the current one, expired or not; None otherwise."""
+        row = db.execute("SELECT * FROM tasks WHERE id=?", (lease.task_id,)).fetchone()
+        if (row is None or row["state"] != "running" or row["fence"] != lease.fence or row["worker"] != lease.worker
+                or row["expires"] != lease.expires_at or row["spec"] != lease.spec_json
+                or row["digest"] != lease.spec_digest):
+            return None
+        return row
+
+    def complete(self, lease, result):
+        self._check(lease)
         if not isinstance(result, dict):
             raise ValueError("result must be a JSON object")
         encoded = canonical_json(result)
         digest = hashlib.sha256(encoded.encode()).hexdigest()
         with self._transaction() as db:
             now = self._now()
-            row = db.execute("SELECT * FROM tasks WHERE id=?", (lease.task_id,)).fetchone()
-            if (row is None or row["state"] != "running" or row["expires"] <= now
-                    or row["fence"] != lease.fence or row["worker"] != lease.worker
-                    or row["expires"] != lease.expires_at or row["spec"] != lease.spec_json
-                    or row["digest"] != lease.spec_digest):
+            row = self._held(db, lease)
+            if row is None or row["expires"] <= now:
                 raise StaleLease("result rejected: lease is no longer current")
             db.execute("INSERT INTO results VALUES(?,?,?,?)", (lease.task_id, lease.fence, encoded, digest))
             db.execute("UPDATE tasks SET state='completed' WHERE id=?", (lease.task_id,))
-            db.execute("INSERT INTO events(kind,task_id,fence,time) VALUES('completed',?,?,?)", (lease.task_id, lease.fence, now))
+            self._event(db, "completed", lease.task_id, lease.fence, now)
         return digest
+
+    def interrupt(self, lease, signal_name):
+        """Return a stopped attempt's task to pending at once. The attempt stays charged and the fence
+        stays spent, so the stopped attempt can never complete; nothing is deleted."""
+        self._check(lease)
+        detail = canonical_json({"signal": _name(signal_name)})
+        with self._transaction() as db:
+            if self._held(db, lease) is None:
+                raise StaleLease("release rejected: lease is no longer current")
+            db.execute("UPDATE tasks SET state='pending',worker=NULL,expires=NULL WHERE id=?", (lease.task_id,))
+            self._event(db, "interrupted", lease.task_id, lease.fence, self._now(), detail)
+
+    def abandon(self, task_id, fence, reason, *, holder_state):
+        """Free the current lease of a task whose recorded holder is dead, as interrupt() would have.
+
+        holder_state(holder) answers "alive", "dead" or "unknown"; only "dead" frees the task.
+        """
+        _name(task_id); _name(reason)
+        if type(fence) is not int:
+            raise ValueError("fence must be an integer")
+        with self._transaction() as db:
+            row = db.execute("SELECT * FROM tasks WHERE id=?", (task_id,)).fetchone()
+            if row is None:
+                raise ValueError("abandon refused: no such task")
+            if row["state"] == "completed":
+                raise ValueError("abandon refused: task is completed")
+            if row["state"] != "running":
+                raise ValueError("abandon refused: task is not leased")
+            if row["fence"] != fence:
+                raise ValueError(f"abandon refused: fence {fence} is not the current lease (fence {row['fence']})")
+            recorded = db.execute("SELECT d.detail FROM events e JOIN event_details d ON d.sequence=e.sequence "
+                                  "WHERE e.kind='acquired' AND e.task_id=? AND e.fence=?", (task_id, fence)).fetchone()
+            if recorded is None:
+                raise ValueError("abandon refused: lease records no holder; it can only expire")
+            holder = json.loads(recorded[0])["holder"]
+            state = holder_state(holder)
+            if state != "dead":
+                raise ValueError("abandon refused: the lease holder is still running" if state == "alive"
+                                 else "abandon refused: the lease holder cannot be checked from this host")
+            db.execute("UPDATE tasks SET state='pending',worker=NULL,expires=NULL WHERE id=?", (task_id,))
+            self._event(db, "abandoned", task_id, fence, self._now(),
+                        canonical_json({"reason": reason, "holder": holder}))
+        return {"task_id": task_id, "fence": fence, "reason": reason, "holder": holder}
 
     def snapshot(self):
         """Return queue records and raw results without claiming verification."""
@@ -170,4 +263,6 @@ class Store:
             return {"budget": dict(db.execute("SELECT maximum,spent FROM budget WHERE id=1").fetchone()),
                     "tasks": [dict(r) for r in db.execute("SELECT * FROM tasks ORDER BY id")],
                     "results": [dict(r) for r in db.execute("SELECT * FROM results ORDER BY task_id")],
-                    "events": [dict(r) for r in db.execute("SELECT * FROM events ORDER BY sequence")]}
+                    "events": [dict(r) for r in db.execute(
+                        "SELECT e.*, d.detail FROM events e LEFT JOIN event_details d ON d.sequence=e.sequence "
+                        "ORDER BY e.sequence")]}

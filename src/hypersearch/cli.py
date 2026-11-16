@@ -72,6 +72,11 @@ def main(argv=None):
             study.add_argument("--receipt", required=True)
             study.add_argument("--expected-receipt-sha256", required=True)
             study.add_argument("--replay-id", required=True)
+    abandon = sub.add_parser("abandon-attempt", help="free a task whose launcher died holding it; deletes nothing")
+    abandon.add_argument("--db", required=True, help="an existing task database")
+    abandon.add_argument("--task", required=True, help="the task id, as a refused start prints it")
+    abandon.add_argument("--fence", required=True, type=int, help="the fence of the lease to abandon")
+    abandon.add_argument("--reason", required=True, help="why, recorded with the abandoned event")
     check = sub.add_parser("check-export", help="re-verify directories of exported receipts; runs and writes nothing")
     check.add_argument("--route", required=True, choices=("study", "census", "program"))
     check.add_argument("--export", required=True, action="append", help="a receipt directory; repeat for several")
@@ -97,6 +102,9 @@ def main(argv=None):
         if args.command in ("run-program", "replay-program"):
             from .program import main as program_main
             return program_main(args)
+        if args.command == "abandon-attempt":
+            from .holders import main as abandon_main
+            return abandon_main(args)
         if args.command == "check-export":
             from .export_check import main as check_main
             return check_main(args)

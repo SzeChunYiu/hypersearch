@@ -151,3 +151,39 @@ software increment, not completion or director effectiveness evidence.
   refuse them. Every release reviews that set (`EARLIER`).
 - Planned, not in this change: an admitted exploration route, a CPU-time
   limit and a family manifest; see the roadmap.
+
+## 0.9.0 development — a stopped launch releases its task
+
+- Found in use: a launch stopped by its operator kept its task leased for
+  the timeout plus the margin (hours), so every relaunch was refused as
+  `task is leased to another attempt`; and SIGTERM to the launcher skipped
+  the clean-up that kills the program's process group, so the program could
+  outlive it.
+- `run-*` and `replay-*` handle SIGTERM, SIGINT and SIGHUP while the lease
+  is held and the outcome undecided: the child is killed (a program's whole
+  group), the task returns to `pending` with an `interrupted` event, the
+  command prints `"execution": "interrupted"` and exits 2. The attempt stays
+  charged and the fence spent, so the stopped attempt can never complete and
+  a relaunch is accepted at once. Elsewhere a stop waits for the step in
+  progress (a commit is never cut) and is then delivered as before; ignored
+  signals stay ignored. In-process callers get `Interrupted`, a
+  `BaseException`.
+- On Linux every route's child is started with the parent-death signal
+  (`PR_SET_PDEATHSIG`, SIGKILL), so a SIGKILLed launcher takes its child
+  with it. The child's own descendants are not covered.
+- New command `abandon-attempt --db --task --fence --reason`. Leases taken by
+  the frozen routes record their holder (process id, start time, boot id,
+  host). The command frees a lease only when that holder is dead, appends an
+  `abandoned` event, keeps the attempt charged, and never deletes results,
+  events, receipts or exports. It refuses a live, unrecorded or uncheckable
+  holder, a stale fence and a pending or completed task.
+- Store: new table `event_details`; the earlier tables keep their
+  definitions, so 0.8.0 opens a 0.9.0 database and grants a released task.
+  `status` prints each event's `detail`. New `Store.existing`,
+  `Store.interrupt`, `Store.abandon` and the `holder` argument.
+- No receipt, schema or verifier change. The version changes, so every
+  frozen bundle must name 0.9.0 with this commit; existing studies keep their
+  old pins. `check-export` also reads receipts of 0.8.0, whose receipt
+  validators are unchanged apart from the version (`EARLIER`).
+- Not in this change: heartbeat leases, time budgets and a read-only status
+  with holder liveness.
