@@ -2,6 +2,17 @@
 
 No stable release has been commissioned. Entries describe development work, not production certification.
 
+## 0.10.0 development — admitted exploration
+
+- Add `run-exploration` / `replay-exploration`: a committed program runs as on
+  the pinned-program route and its `{"observations": ...}` output is
+  receipted as `EXPLORATION_RECORDED`, `citable: false`. No verdict field is
+  admitted; frozen routes and `check-export` refuse these receipts as
+  evidence. New schemas `hypersearch.exploration-*/v1`, verifier
+  `hypersearch.exploration/v1`.
+- `check-export` reads 0.9.0 receipts (validators unchanged) and names an
+  exploration receipt among evidence as `exploration receipt is not evidence`.
+
 ## Unreleased — 0.3.0 development
 
 - Add frozen bundle/execution/receipt contracts and bounded supplied-certificate

@@ -13,17 +13,17 @@ The objective is useful, reproducible discovery across domains. A completed soft
 | 6 — measured improvement | Policy portfolio and versioned evaluation program | Matched budgets/seeds, held-out families, valid-result throughput and false acceptance, independent review/rollback |
 | 7 — public releases | Docs, reproducibility bundles, contributor attribution and release signing | Community can reproduce a release without private access; license/provenance audit and consumer compatibility |
 
+## Implemented from this list
+
+- **An admitted exploration route** (0.10.0, [EXPLORATION.md](EXPLORATION.md)):
+  exploratory runs get non-citable receipts that `check-export` and the
+  frozen routes refuse as evidence. Independent review pending.
+
 ## Planned for the frozen routes
 
 Not implemented. All came from use of the pinned-program route on families
 of studies; each is a separate change, and most need a new schema version.
 
-- **An admitted exploration route.** Exploration before a protocol is frozen
-  is today done outside the harness and leaves no record. An exploration
-  route would run a program the same way, receipt it, and mark the receipt
-  non-citable: it is a log of what was tried, never evidence, and no check
-  or promotion accepts it. Exit: every exploratory run has a receipt, and
-  `check-export` and the frozen routes refuse one as evidence.
 - **A CPU-time limit in a v2 manifest.** The only time limit today is wall
   time, so a busy host can turn a correct computation into `INCOMPLETE`, and a
   consumer has to keep the host otherwise idle while a study runs. A limit on

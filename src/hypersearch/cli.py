@@ -61,8 +61,10 @@ def main(argv=None):
     status = sub.add_parser("status", help="inspect raw queue state (not certification)")
     status.add_argument("--db", required=True)
     status.add_argument("--budget", type=int, default=100)
-    for name in ("run-study", "replay-study", "run-census", "replay-census", "run-program", "replay-program"):
-        study = sub.add_parser(name, help="execute a frozen supplied-certificate, exhaustive-census or pinned-program task")
+    for name in ("run-study", "replay-study", "run-census", "replay-census", "run-program", "replay-program",
+                 "run-exploration", "replay-exploration"):
+        study = sub.add_parser(name, help="execute a frozen supplied-certificate, exhaustive-census, pinned-program "
+                                          "or non-citable exploration task")
         study.add_argument("--consumer-root", required=True)
         study.add_argument("--db", required=True)
         study.add_argument("--export", required=True)
@@ -85,7 +87,7 @@ def main(argv=None):
     review_arguments(sub)
     args = parser.parse_args(argv)
     try:
-        if args.command.endswith(("-review", "-study", "-census", "-program", "-export")):
+        if args.command.endswith(("-review", "-study", "-census", "-program", "-exploration", "-export")):
             if signal.getsignal(signal.SIGCHLD) == signal.SIG_IGN:  # inherited across exec, it loses every exit status
                 signal.signal(signal.SIGCHLD, signal.SIG_DFL)
             from .study_paths import launch_boundary
@@ -102,6 +104,9 @@ def main(argv=None):
         if args.command in ("run-program", "replay-program"):
             from .program import main as program_main
             return program_main(args)
+        if args.command in ("run-exploration", "replay-exploration"):
+            from .exploration import main as exploration_main
+            return exploration_main(args)
         if args.command == "abandon-attempt":
             from .holders import main as abandon_main
             return abandon_main(args)

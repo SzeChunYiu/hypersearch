@@ -17,7 +17,9 @@ ROUTES = {"study": study_route, "census": census_route, "program": program_route
 EXPECTED_SCHEMA = "hypersearch.expected-outcomes/v1"
 REFUSED = (ValueError, TypeError, KeyError, RecursionError)
 # Read here only: their receipt validators equal this release's but for the version. Review at every release.
-EARLIER = frozenset({"0.7.0", "0.7.1", "0.8.0"})
+EARLIER = frozenset({"0.7.0", "0.7.1", "0.8.0", "0.9.0"})
+# Never a route here: an exploration receipt is a log of what was tried, never evidence.
+EXPLORATION_RECEIPT = "hypersearch.exploration-receipt/v1"
 
 
 def problem(kind, subject):
@@ -89,6 +91,8 @@ def refusal(route, raw):
         schema, version = value["schema"], value["execution"]["bundle"]["instrument"]["release_version"]
     except REFUSED:
         return "receipt refused by the route's validator"
+    if schema == EXPLORATION_RECEIPT:
+        return "exploration receipt is not evidence"
     if type(schema) is str and schema != route.receipt_schema and schema in {make().receipt_schema for make in ROUTES.values()}:
         return "receipt belongs to another route"
     if type(version) is str and version not in EARLIER | {__version__}:  # only these versions are read

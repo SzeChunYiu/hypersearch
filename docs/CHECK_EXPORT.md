@@ -98,6 +98,7 @@ One JSON object in the committed encoding:
 | `file exceeds the receipt byte bound` | path | top |
 | `file name is not the digest of its bytes` | path | top |
 | `receipt belongs to another route` | path | top |
+| `exploration receipt is not evidence` | path | top |
 | `receipt names another instrument version` | path | top |
 | `receipt refused by the route's validator` | path | top |
 | `receipt is not in the committed encoding` | path | top |

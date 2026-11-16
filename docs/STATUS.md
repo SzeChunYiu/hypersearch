@@ -191,5 +191,7 @@ studies keep their pins. No research executed.
   certification.
 - Stopping a launch and `abandon-attempt` (0.9.0 development): see the
   status section of [STOPPING.md](STOPPING.md). Author checks only.
+- Admitted exploration tasks (0.10.0 development): see the status section
+  of [EXPLORATION.md](EXPLORATION.md). Author checks only.
 
 None of these executes research here, promotes a claim or lifts a consumer hold.
