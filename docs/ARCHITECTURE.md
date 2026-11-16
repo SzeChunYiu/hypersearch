@@ -38,7 +38,7 @@ relying on execution failure or transaction rollback to reject bad requests.
 
 ## Ownership and recovery
 
-One local SQLite authority serializes claims. Reclaimed tasks receive a higher fencing generation; result acceptance checks current ownership, generation and expiry. An attempt is charged when granted, including failures or lost replies. This bounds attempts, not dollars, tokens, CPU time or external side effects. Next stages must reserve multidimensional budgets and reconcile uncertain external effects before retrying.
+One local SQLite authority serializes claims. Reclaimed tasks receive a higher fencing generation; result acceptance checks current ownership, generation and expiry. An attempt is charged when granted, including failures, lost replies and stopped or abandoned launches; a stopped launch returns its task to pending at once with its fence spent. This bounds attempts, not dollars, tokens, CPU time or external side effects. Next stages must reserve multidimensional budgets and reconcile uncertain external effects before retrying.
 
 SQLite files must remain on one host/local filesystem. Distributed workers eventually use an authenticated service; they must not share WAL files over network storage. Clock rollback, database rollback, disk loss, malicious local edits and authenticated cross-host ownership remain unhandled production threats. External receivers must enforce fencing at their own side-effect boundary before deployment is claimed.
 

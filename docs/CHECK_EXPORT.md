@@ -154,7 +154,7 @@ elsewhere, for example by the consumer commit; a digest field is planned
 
 - A receipt names the instrument version that wrote it. The check reads
   receipts of this version and of the earlier releases in `EARLIER` of
-  `hypersearch.export_check`, now 0.7.0 and 0.7.1, whose receipt validators
+  `hypersearch.export_check`, now 0.7.0, 0.7.1 and 0.8.0, whose receipt validators
   are byte-identical to this one's apart from the version. Receipts of any
   other version are `receipt names another instrument version`: check them
   with the version they pin. Reading is all: `run-*` and `replay-*` still

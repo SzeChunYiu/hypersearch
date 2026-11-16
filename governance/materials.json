@@ -128,6 +128,12 @@
       "lifecycle": "active"
     },
     {
+      "path": "docs/STOPPING.md",
+      "owner": "documentation-maintainers",
+      "role": "documentation",
+      "lifecycle": "experimental"
+    },
+    {
       "path": "docs/STUDIES.md",
       "owner": "documentation-maintainers",
       "role": "documentation",
@@ -258,6 +264,18 @@
       "owner": "core-maintainers",
       "role": "code",
       "lifecycle": "active"
+    },
+    {
+      "path": "src/hypersearch/holders.py",
+      "owner": "core-maintainers",
+      "role": "code",
+      "lifecycle": "experimental"
+    },
+    {
+      "path": "src/hypersearch/interruption.py",
+      "owner": "core-maintainers",
+      "role": "code",
+      "lifecycle": "experimental"
     },
     {
       "path": "src/hypersearch/math_adapter.py",
@@ -440,6 +458,12 @@
       "lifecycle": "active"
     },
     {
+      "path": "tests/test_interruption.py",
+      "owner": "quality-maintainers",
+      "role": "test",
+      "lifecycle": "active"
+    },
+    {
       "path": "tests/test_math_adapter.py",
       "owner": "quality-maintainers",
       "role": "test",
@@ -456,6 +480,18 @@
       "owner": "quality-maintainers",
       "role": "test",
       "lifecycle": "experimental"
+    },
+    {
+      "path": "tests/test_program_interruption.py",
+      "owner": "quality-maintainers",
+      "role": "test",
+      "lifecycle": "active"
+    },
+    {
+      "path": "tests/test_program_stop_windows.py",
+      "owner": "quality-maintainers",
+      "role": "test",
+      "lifecycle": "active"
     },
     {
       "path": "tests/test_program_reaping.py",
@@ -477,6 +513,12 @@
     },
     {
       "path": "tests/test_store.py",
+      "owner": "quality-maintainers",
+      "role": "test",
+      "lifecycle": "active"
+    },
+    {
+      "path": "tests/test_store_release.py",
       "owner": "quality-maintainers",
       "role": "test",
       "lifecycle": "active"

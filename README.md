@@ -120,3 +120,12 @@ The `run-*` and `replay-*` commands also print the wall time, CPU time and
 peak resident memory of the child they ran. These figures are in the printed
 result only, never in a receipt. See
 [frozen studies](docs/STUDIES.md#resource-usage-in-the-printed-result--since-080).
+
+## Stopping a launch — 0.9.0 development
+
+SIGTERM, SIGINT or SIGHUP to a `run-*` or `replay-*` launcher kills its child
+(a program's whole process group), records an `interrupted` event and returns
+the task to pending at once, with the attempt charged and the fence spent. On
+Linux a child dies with its launcher. `abandon-attempt` frees the lease of a
+launcher that died hard, only once it is dead, and deletes nothing. See
+[stopping a launch](docs/STOPPING.md).

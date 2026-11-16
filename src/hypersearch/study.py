@@ -8,7 +8,9 @@ import tempfile
 import time
 from types import SimpleNamespace
 
-from .store import Store
+from .holders import identity
+from .interruption import Interrupted, parent_death, stopping
+from .store import StaleLease, Store
 from .study_contract import execution_identity, validate_wrapper, wrapper
 from .study_json import MAX_BUNDLE_BYTES, MAX_RECEIPT_BYTES, digest, encode, parse
 from .study_outcomes import outcome, verification
@@ -43,7 +45,7 @@ def run_child(bundle, core, module, interpret, meter=None):
                 with waited_children(meter or Meter()):  # subprocess.run reaps the child itself
                     result = subprocess.run(
                         [sys.executable, "-B", "-S", "-P", "-X", "pycache_prefix=" + work + "/bytecode",
-                         "-m", module], input=encode(bundle), stdout=out, stderr=err,
+                         "-m", module], input=encode(bundle), stdout=out, stderr=err, preexec_fn=parent_death(),
                         cwd=work, env=environment, timeout=bundle["limits"]["timeout_seconds"], check=False)
             except subprocess.TimeoutExpired:
                 return {"status": "INCOMPLETE", "verification": None}, "verifier timeout"
@@ -69,7 +71,8 @@ def execute(execution, *, consumer_root, database, export, inputs=(), parent_rec
         raise ValueError("original execution cannot carry a replay parent")
     core, consumer = verify_sources(bundle, CORE_ROOT, consumer_root, required=route.required)
     database, export = output_paths(database, export, (core, consumer), inputs)
-    store = Store(database, max_attempts=bundle["limits"]["db_max_attempts"])
+    # Each lease this launch takes records this process, so a lease it strands can be abandoned once it is dead.
+    store = Store(database, max_attempts=bundle["limits"]["db_max_attempts"], holder=identity())
     task_id, specification = route.execution_identity(execution)
     # Stable replay ID binds once, atomically, before any grant. Changing its
     # parent or bundle conflicts with Store.submit's immutable specification.
@@ -91,52 +94,70 @@ def execute(execution, *, consumer_root, database, export, inputs=(), parent_rec
         return {"execution": "not_rerun", "receipt_sha256": digest(encode(receipt)), "receipt_path": str(path),
                 "outcome_status": receipt["outcome"]["status"], "replay_matches_parent": receipt["replay_matches_parent"]}
     duration = bundle["limits"]["timeout_seconds"] + bundle["limits"]["commit_margin_seconds"]
-    lease = store.acquire(route.worker, lease_seconds=duration, task_id=task_id)
-    if lease is None:
-        # Say which of the two refusals this is: a family of tasks sharing one database needs a
-        # ceiling of at least one attempt per task, and an exhausted ceiling must not look like a busy task.
-        after = store.snapshot()
-        budget = after["budget"]
-        state = next((t["state"] for t in after["tasks"] if t["id"] == task_id), None)
-        if state is None:
-            raise ValueError("stored task disappeared")
-        if state == "completed":  # another attempt finished after the admission read above
-            reason = "task was completed by another attempt"
-        elif budget["spent"] >= budget["maximum"]:
-            reason = "attempt budget exhausted"
-        else:
-            reason = "task is leased to another attempt"
-        return {"execution": "not_started", "task_id": task_id, "budget": budget, "task_state": state, "reason": reason}
-    started = time.monotonic()
-    diagnostics = ""
-    meter = Meter()  # host-dependent, so it goes to the printed result and never into the receipt
+    with stopping() as stop:  # a stop is held until the lease is taken, then releases it
+        lease = store.acquire(route.worker, lease_seconds=duration, task_id=task_id)
+        if lease is None:
+            # Say which of the two refusals this is: a family of tasks sharing one database needs a
+            # ceiling of at least one attempt per task, and an exhausted ceiling must not look like a busy task.
+            after = store.snapshot()
+            budget = after["budget"]
+            state = next((t["state"] for t in after["tasks"] if t["id"] == task_id), None)
+            if state is None:
+                raise ValueError("stored task disappeared")
+            if state == "completed":  # another attempt finished after the admission read above
+                reason = "task was completed by another attempt"
+            elif budget["spent"] >= budget["maximum"]:
+                reason = "attempt budget exhausted"
+            else:
+                reason = "task is leased to another attempt"
+            return {"execution": "not_started", "task_id": task_id, "budget": budget, "task_state": state, "reason": reason}
+        started = time.monotonic()
+        diagnostics = ""
+        meter = Meter()  # host-dependent, so it goes to the printed result and never into the receipt
+        try:
+            with stop.armed():
+                frozen = route.validate_wrapper(parse(lease.spec_json.encode()))
+                if frozen != execution:
+                    raise ValueError("leased execution differs from admitted wrapper")
+                result, diagnostics = route.run(frozen["bundle"], core, meter)
+                route.outcome(result, frozen["bundle"])
+        except Interrupted as stopped:  # the route has killed its child; the attempt stays charged
+            raise Interrupted(stopped.signum, release(store, lease, stopped.signum)) from None
+        except (ValueError, TypeError, KeyError, OSError, subprocess.SubprocessError, RecursionError) as error:
+            result = {"status": "EXECUTION_FAILED", "verification": None}
+            diagnostics = str(error)[:4096]
+        receipt = {"schema": route.receipt_schema, "execution": execution,
+                   "execution_sha256": specification, "task_id": task_id, "outcome": result, "outcome_sha256": digest(encode(result)),
+                   "attempt": {"worker": lease.worker, "fence": lease.fence},
+                   "runtime": {"python": platform.python_version(), "implementation": platform.python_implementation(),
+                               "core_commit": bundle["instrument"]["commit"],
+                               "elapsed_ms": int((time.monotonic() - started) * 1000)},
+                   "diagnostics": diagnostics,
+                   "replay_matches_parent": (None if parent_receipt is None  # by encoding: 1 == True in Python
+                                             else encode(result) == encode(parent_receipt["outcome"]))}
+        route.validate_receipt(receipt)
+        # Stale/expired completion raises; nothing is exported before the commit.
+        result_digest = store.complete(lease, receipt)
+        if result_digest != digest(encode(receipt)):
+            raise ValueError("stored result encoding identity mismatch")
+        path = export_receipt(receipt, export, validator=route.validate_receipt)
+        return {"execution": "completed", "receipt_sha256": result_digest, "receipt_path": str(path),
+                "outcome_status": result["status"], "replay_matches_parent": receipt["replay_matches_parent"],
+                "usage": meter.report()}
+
+
+def release(store, lease, signum):
+    """Return the stopped attempt's task to pending, unless another attempt already holds it."""
+    name = Interrupted(signum).name
     try:
-        frozen = route.validate_wrapper(parse(lease.spec_json.encode()))
-        if frozen != execution:
-            raise ValueError("leased execution differs from admitted wrapper")
-        result, diagnostics = route.run(frozen["bundle"], core, meter)
-        route.outcome(result, frozen["bundle"])
-    except (ValueError, TypeError, KeyError, OSError, subprocess.SubprocessError, RecursionError) as error:
-        result = {"status": "EXECUTION_FAILED", "verification": None}
-        diagnostics = str(error)[:4096]
-    receipt = {"schema": route.receipt_schema, "execution": execution,
-               "execution_sha256": specification, "task_id": task_id, "outcome": result, "outcome_sha256": digest(encode(result)),
-               "attempt": {"worker": lease.worker, "fence": lease.fence},
-               "runtime": {"python": platform.python_version(), "implementation": platform.python_implementation(),
-                           "core_commit": bundle["instrument"]["commit"],
-                           "elapsed_ms": int((time.monotonic() - started) * 1000)},
-               "diagnostics": diagnostics,
-               "replay_matches_parent": (None if parent_receipt is None  # by encoding: 1 == True in Python
-                                         else encode(result) == encode(parent_receipt["outcome"]))}
-    route.validate_receipt(receipt)
-    # Stale/expired completion raises; nothing is exported before the commit.
-    result_digest = store.complete(lease, receipt)
-    if result_digest != digest(encode(receipt)):
-        raise ValueError("stored result encoding identity mismatch")
-    path = export_receipt(receipt, export, validator=route.validate_receipt)
-    return {"execution": "completed", "receipt_sha256": result_digest, "receipt_path": str(path),
-            "outcome_status": result["status"], "replay_matches_parent": receipt["replay_matches_parent"],
-            "usage": meter.report()}
+        store.interrupt(lease, name)
+        released = True
+    except StaleLease:
+        released = False
+    after = store.snapshot()
+    state = next((t["state"] for t in after["tasks"] if t["id"] == lease.task_id), None)
+    return {"execution": "interrupted", "task_id": lease.task_id, "fence": lease.fence, "signal": name,
+            "lease_released": released, "budget": after["budget"], "task_state": state}
 
 
 def main(args, route=None):
@@ -157,8 +178,14 @@ def main(args, route=None):
         execution = route.wrapper(parent["execution"]["bundle"],
                                   parent=args.expected_receipt_sha256, replay_id=args.replay_id)
         inputs = (args.receipt,)
-    result = execute(execution, consumer_root=args.consumer_root, database=args.db,
-                     export=args.export, inputs=inputs, parent_receipt=parent, route=route)
+    try:
+        result = execute(execution, consumer_root=args.consumer_root, database=args.db,
+                         export=args.export, inputs=inputs, parent_receipt=parent, route=route)
+    except Interrupted as stopped:
+        if stopped.result is None:
+            raise
+        print(encode(stopped.result).decode("ascii"))
+        return 2
     print(encode(result).decode("ascii"))
     if result.get("replay_matches_parent") is False:
         return 2

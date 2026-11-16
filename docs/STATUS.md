@@ -189,5 +189,7 @@ studies keep their pins. No research executed.
   [STUDIES.md](STUDIES.md). Reviewed twice by one separate session started
   by the author (defects found and fixed, then confirmed); not independent
   certification.
+- Stopping a launch and `abandon-attempt` (0.9.0 development): see the
+  status section of [STOPPING.md](STOPPING.md). Author checks only.
 
 None of these executes research here, promotes a claim or lifts a consumer hold.
