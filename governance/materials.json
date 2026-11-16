@@ -488,6 +488,12 @@
       "lifecycle": "active"
     },
     {
+      "path": "tests/test_program_stop_windows.py",
+      "owner": "quality-maintainers",
+      "role": "test",
+      "lifecycle": "active"
+    },
+    {
       "path": "tests/test_program_reaping.py",
       "owner": "quality-maintainers",
       "role": "test",
