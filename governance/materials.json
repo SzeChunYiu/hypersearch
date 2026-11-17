@@ -284,6 +284,12 @@
       "lifecycle": "experimental"
     },
     {
+      "path": "src/hypersearch/lean_request.py",
+      "owner": "core-maintainers",
+      "role": "code",
+      "lifecycle": "experimental"
+    },
+    {
       "path": "src/hypersearch/lean_snapshot.py",
       "owner": "core-maintainers",
       "role": "code",
@@ -474,6 +480,12 @@
       "owner": "quality-maintainers",
       "role": "test",
       "lifecycle": "active"
+    },
+    {
+      "path": "tests/test_lean_request.py",
+      "owner": "core-maintainers",
+      "role": "test",
+      "lifecycle": "experimental"
     },
     {
       "path": "tests/test_lean_snapshot.py",

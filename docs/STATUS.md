@@ -2,6 +2,16 @@
 
 ## Lean source snapshot preparation — 2026-11-17
 
+Follow-up input binding: a separately supplied frozen question identity now
+binds target names, challenge bytes, dependency/runtime/evaluator references,
+empty axiom policy and all six checker identities. Candidate input cannot
+override policy or insert acceptance fields. This is pure draft validation,
+not an authenticated task receiver or formal-proof route. Seven new tests plus
+the existing suite pass: 189 tests in 45.029 seconds on Python 3.12.14.
+Governance and a fresh README demo pass. The next requirement is receiver-side
+runtime/source verification and bounded execution under a persisted grant;
+no execution or receipt authority is supplied by these helper functions.
+
 Experimental source-only validation toward #2/#3 and #24's selected-candidate
 boundary: closed byte-bound artifacts, deterministic snapshot identity,
 bounded UTF-8 source, duplicate/case/prefix path refusal. No source executes,
