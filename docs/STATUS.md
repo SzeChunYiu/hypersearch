@@ -1,5 +1,53 @@
 # Status — 2026-11-14
 
+## Lean source snapshot preparation — 2026-11-17
+
+Lease-input follow-up: the Store has a transactional read of a current lease's
+specification. Draft Lean input revalidation additionally checks externally
+supplied expected task/question identities and reconstructs canonical bytes.
+Five new tests exercise live/expired/reclaimed/completed leases, substituted
+lease fields, incorrect expectations and a self-consistent invalid stored scope.
+No worker, grant CLI, runtime admission or proof receipt is commissioned.
+Author checks: 198 tests passed in 45.948 seconds on Python 3.12.14; governance
+and a fresh README demo passed. Existing interruption/review tests emitted
+unclosed-stream ResourceWarnings during this run; they did not fail and their
+cleanup paths were not changed in this increment. Independent review remains
+pending, including the shared Store API addition and its point-in-time limits.
+
+Registration follow-up: draft Lean candidates now submit immutable canonical
+specifications to the existing Store. Four tests cover idempotency, unchanged
+Store state on refusal, source/limit identity changes, file-order normalization,
+and detached bytes. Registration acquires no lease and spends no attempt;
+no executable Lean route or proof receipt is commissioned. Author checks:
+193 tests passed in 45.216 seconds on Python 3.12.14; governance and a fresh
+README demo passed. The initial targeted test invocation also discovered an
+imported test class, duplicating seven older tests; the import was corrected
+before the full run, whose count includes each test once.
+
+Follow-up input binding: a separately supplied frozen question identity now
+binds target names, challenge bytes, dependency/runtime/evaluator references,
+empty axiom policy and all six checker identities. Candidate input cannot
+override policy or insert acceptance fields. This is pure draft validation,
+not an authenticated task receiver or formal-proof route. Seven new tests plus
+the existing suite pass: 189 tests in 45.029 seconds on Python 3.12.14.
+Governance and a fresh README demo pass. The next requirement is receiver-side
+runtime/source verification and bounded execution under a persisted grant;
+no execution or receipt authority is supplied by these helper functions.
+
+Experimental source-only validation toward #2/#3 and #24's selected-candidate
+boundary: closed byte-bound artifacts, deterministic snapshot identity,
+bounded UTF-8 source, duplicate/case/prefix path refusal. No source executes,
+no receipt or verifier is registered, and no existing route or release schema
+is changed. See [draft input contract](LEAN_SNAPSHOT.md).
+
+Author checks on Python 3.12.14: all 182 tests passed in 44.994 seconds (six new
+snapshot tests), tracked-material governance passed, and the fresh README demo
+returned its known C2^3 lower-bound witness with seven subsets checked. The first
+new test invocation had a syntax error in the test file; it was corrected before
+the successful targeted and full runs. No scientific study ran. Independent
+review, PR publication and consumer adoption remain pending. Source identity
+alone is neither dependency completeness nor formal proof acceptance.
+
 ## Observed implementation
 
 - Foundation commit f7254533a9310060bde7f045e7ba89b12d520073: 18 tests and demo passed in GitHub Actions on Python 3.11/3.12/3.13.

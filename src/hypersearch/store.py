@@ -198,6 +198,20 @@ class Store:
             return None
         return row
 
+    def current_specification(self, lease):
+        """Read the immutable input only while this lease is currently live.
+
+        This is a point-in-time check, not a reservation beyond lease expiry.
+        Receivers must still fence effects and complete through this Store.
+        No event, attempt, renewal or result is created by this read.
+        """
+        self._check(lease)
+        with self._transaction() as db:
+            row = self._held(db, lease)
+            if row is None or row["expires"] <= self._now():
+                raise StaleLease("input rejected: lease is no longer current")
+            return row["spec"]
+
     def complete(self, lease, result):
         self._check(lease)
         if not isinstance(result, dict):
