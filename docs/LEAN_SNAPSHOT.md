@@ -78,3 +78,29 @@ pins, release schemas, execution authority and scientific claim scopes are
 unchanged. Tests cover substituted goals/runtime/imports/checkers, missing
 checkers, extra axioms, forged acceptance fields, wrong challenge bytes, missing
 module source, unsafe identifier syntax, and candidate identity changes.
+
+## Registration on the existing task store
+
+`lean_task.prepare_task` validates the question/candidate binding and bounded
+evaluator-owned time/memory limits, detaches the data into canonical JSON bytes,
+sorts source-file lists, and hashes the complete draft specification. The full
+envelope is capped at the existing 1 MiB bundle limit, which is stricter than
+the per-snapshot decoded-source limit once base64 and multiple inputs are counted.
+
+`register_candidate` submits those bytes to the existing cooperative Store under
+their content-derived `lean-draft-...` identity. Repeating identical input or
+permuting source-file order deduplicates. Changed source or resource limits
+produce a distinct task. An invalid request is rejected before Store.submit,
+leaving an already-open Store unchanged. This API does not itself create/open
+the database, validate source pins, or authenticate its caller.
+
+Registration leaves the candidate pending, acquires no task, spends no attempt,
+and writes no result. Other pending work is untouched. There is no Lean worker,
+grant command, replay route, or claim-bearing receipt yet. The generic Store
+can be called by cooperative in-process callers; this draft does not change
+that trust model or create an execution permission boundary on its own.
+
+Next integration must use the existing lease/fence and attempt-budget machinery,
+check the exact leased specification at the execution receiver, measure the
+runtime/dependency identities, and retain failed or incomplete attempts. It
+must not turn a registration record into evidence of a successful proof check.

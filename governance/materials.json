@@ -296,6 +296,12 @@
       "lifecycle": "experimental"
     },
     {
+      "path": "src/hypersearch/lean_task.py",
+      "owner": "core-maintainers",
+      "role": "code",
+      "lifecycle": "experimental"
+    },
+    {
       "path": "src/hypersearch/math_adapter.py",
       "owner": "core-maintainers",
       "role": "code",
@@ -489,6 +495,12 @@
     },
     {
       "path": "tests/test_lean_snapshot.py",
+      "owner": "core-maintainers",
+      "role": "test",
+      "lifecycle": "experimental"
+    },
+    {
+      "path": "tests/test_lean_task.py",
       "owner": "core-maintainers",
       "role": "test",
       "lifecycle": "experimental"

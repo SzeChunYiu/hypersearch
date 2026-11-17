@@ -2,6 +2,16 @@
 
 ## Lean source snapshot preparation — 2026-11-17
 
+Registration follow-up: draft Lean candidates now submit immutable canonical
+specifications to the existing Store. Four tests cover idempotency, unchanged
+Store state on refusal, source/limit identity changes, file-order normalization,
+and detached bytes. Registration acquires no lease and spends no attempt;
+no executable Lean route or proof receipt is commissioned. Author checks:
+193 tests passed in 45.216 seconds on Python 3.12.14; governance and a fresh
+README demo passed. The initial targeted test invocation also discovered an
+imported test class, duplicating seven older tests; the import was corrected
+before the full run, whose count includes each test once.
+
 Follow-up input binding: a separately supplied frozen question identity now
 binds target names, challenge bytes, dependency/runtime/evaluator references,
 empty axiom policy and all six checker identities. Candidate input cannot
