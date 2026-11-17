@@ -1,6 +1,6 @@
 """Draft Lean registration in the existing Store; no grant or execution route."""
 from .lean_request import bind_candidate
-from .study_json import MAX_BUNDLE_BYTES, digest, encode, fields, integer, parse
+from .study_json import MAX_BUNDLE_BYTES, digest, encode, fields, integer, parse, sha
 
 SCHEMA = "hypersearch.lean-task/draft1"
 
@@ -44,3 +44,25 @@ def register_candidate(store, question, *, expected_question_sha256,
     store.submit(task_id, parse(raw))
     return {"task_id": task_id, "specification_sha256": digest(raw),
             "scope": "registered_candidate_only"}
+
+
+def read_current_candidate(store, lease, *, expected_task_sha256, expected_question_sha256):
+    """Revalidate exact leased bytes against independently supplied frozen IDs.
+
+    This returns untrusted source data, not permission to elaborate it. The lease
+    can expire after this read. Runtime admission, sandboxing, resource control,
+    effect fencing and completion remain the future worker's obligations.
+    """
+    sha(expected_task_sha256)
+    raw = store.current_specification(lease).encode("utf-8")
+    if digest(raw) != expected_task_sha256 or lease.spec_digest != expected_task_sha256:
+        raise ValueError("leased task differs from expected frozen identity")
+    value = parse(raw)
+    fields(value, "schema question binding challenge_snapshot candidate limits scope")
+    task_id, rebuilt = prepare_task(value["question"],
+        expected_question_sha256=expected_question_sha256,
+        challenge_snapshot=value["challenge_snapshot"], candidate=value["candidate"],
+        limits=value["limits"])
+    if rebuilt != raw or task_id != lease.task_id:
+        raise ValueError("leased specification is not the canonical validated task")
+    return value

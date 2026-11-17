@@ -1,12 +1,13 @@
 from copy import deepcopy
+from dataclasses import replace
 from pathlib import Path
 import tempfile
 import unittest
 
-from hypersearch.lean_task import prepare_task, register_candidate
+from hypersearch.lean_task import prepare_task, register_candidate, read_current_candidate
 from hypersearch.lean_request import question_digest
-from hypersearch.store import Store
-from hypersearch.study_json import parse
+from hypersearch.store import Store, StaleLease
+from hypersearch.study_json import parse, encode, digest
 import test_lean_request as request_fixtures
 from test_lean_snapshot import artifact
 
@@ -71,6 +72,69 @@ class LeanTaskTests(unittest.TestCase):
         self.assertEqual((task, raw), prepare_task(self.question, **args))
         args["limits"]["timeout_seconds"] = 99
         self.assertEqual(parse(raw)["limits"]["timeout_seconds"], 10)
+
+    def grant_fixture(self):
+        self.now = 1000.0
+        self.store.clock = lambda: self.now
+        record = register_candidate(self.store, self.question, **self.arguments)
+        lease = self.store.acquire("fixture-worker", 10, task_id=record["task_id"])
+        expected = {"expected_task_sha256": record["specification_sha256"],
+                    "expected_question_sha256": self.arguments["expected_question_sha256"]}
+        return lease, expected
+
+    def test_live_lease_revalidates_without_store_mutation(self):
+        lease, expected = self.grant_fixture()
+        before = self.store.snapshot()
+        value = read_current_candidate(self.store, lease, **expected)
+        self.assertEqual(value, parse(lease.spec_json.encode()))
+        self.assertEqual(self.store.snapshot(), before)
+        value["scope"] = "tampered"
+        self.assertEqual(read_current_candidate(self.store, lease, **expected)["scope"],
+                         "uncommissioned_lean_candidate")
+
+    def test_expired_reclaimed_and_completed_lease_refused(self):
+        lease, expected = self.grant_fixture()
+        self.now = lease.expires_at
+        with self.assertRaises(StaleLease):
+            read_current_candidate(self.store, lease, **expected)
+        newer = self.store.acquire("replacement", 10, task_id=lease.task_id)
+        with self.assertRaises(StaleLease):
+            read_current_candidate(self.store, lease, **expected)
+        read_current_candidate(self.store, newer, **expected)
+        self.store.complete(newer, {"scope": "synthetic_no_proof"})
+        with self.assertRaises(StaleLease):
+            read_current_candidate(self.store, newer, **expected)
+        self.assertEqual(self.store.snapshot()["budget"]["spent"], 2)
+
+    def test_lease_field_substitution_refused(self):
+        lease, expected = self.grant_fixture()
+        before = self.store.snapshot()
+        for changes in ({"worker": "other"}, {"fence": lease.fence + 1},
+                        {"expires_at": lease.expires_at + 1}, {"task_id": "unrelated"},
+                        {"spec_json": "{}"}, {"spec_digest": "0" * 64}):
+            with self.subTest(changes=changes), self.assertRaises(StaleLease):
+                read_current_candidate(self.store, replace(lease, **changes), **expected)
+        self.assertEqual(self.store.snapshot(), before)
+
+    def test_external_expected_id_cannot_be_replaced_by_lease(self):
+        lease, expected = self.grant_fixture()
+        for field in expected:
+            bad = {**expected, field: "0" * 64}
+            with self.subTest(field=field), self.assertRaises(ValueError):
+                read_current_candidate(self.store, lease, **bad)
+
+    def test_self_consistent_but_invalid_stored_scope_is_refused(self):
+        _, raw = prepare_task(self.question, **self.arguments)
+        value = parse(raw)
+        value["scope"] = "formal_proof"
+        changed_digest = digest(encode(value))
+        task_id = "lean-draft-" + changed_digest
+        self.store.submit(task_id, value)
+        lease = self.store.acquire("fixture-worker", 10, task_id=task_id)
+        with self.assertRaises(ValueError):
+            read_current_candidate(self.store, lease,
+                expected_task_sha256=changed_digest,
+                expected_question_sha256=self.arguments["expected_question_sha256"])
 
 
 if __name__ == "__main__":

@@ -104,3 +104,29 @@ Next integration must use the existing lease/fence and attempt-budget machinery,
 check the exact leased specification at the execution receiver, measure the
 runtime/dependency identities, and retain failed or incomplete attempts. It
 must not turn a registration record into evidence of a successful proof check.
+
+## Current-lease input check
+
+`Store.current_specification` now performs a transactional, read-only check of
+the worker, task, generation, expiry, raw specification and specification digest.
+It returns input only for a currently running, unexpired lease. It does not
+renew that lease, charge an attempt, modify an event, or authorize an external
+effect. The existing Store remains cooperative, not an authentication service.
+
+`lean_task.read_current_candidate` additionally requires independently supplied
+expected task and question digests, revalidates the full request, reconstructs
+its canonical bytes and checks its task identity. Consistent-looking metadata
+alone is insufficient: a stored record with altered scope is rejected even when
+its digest was recomputed. The returned sources remain untrusted bytes.
+
+Tests use real temporary SQLite stores and a controlled clock to cover live,
+exactly expired, reclaimed and completed leases; changed worker/generation/
+expiry/task/specification/digest; wrong evaluator expectations; invalid stored
+scope; and unchanged queue state on refusal. Reclamation consumes a second
+attempt under the existing budget rules.
+
+This check is valid at its transaction instant, not for the lifetime of a future
+subprocess. An executing adapter must bound work by the lease, stop and reap its
+children, and commit results with Store.complete so expiry/reclamation remains
+enforced at completion. No production grant command, executable Lean route or
+proof-bearing receipt is introduced by this input check.

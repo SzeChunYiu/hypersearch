@@ -2,6 +2,18 @@
 
 ## Lean source snapshot preparation — 2026-11-17
 
+Lease-input follow-up: the Store has a transactional read of a current lease's
+specification. Draft Lean input revalidation additionally checks externally
+supplied expected task/question identities and reconstructs canonical bytes.
+Five new tests exercise live/expired/reclaimed/completed leases, substituted
+lease fields, incorrect expectations and a self-consistent invalid stored scope.
+No worker, grant CLI, runtime admission or proof receipt is commissioned.
+Author checks: 198 tests passed in 45.948 seconds on Python 3.12.14; governance
+and a fresh README demo passed. Existing interruption/review tests emitted
+unclosed-stream ResourceWarnings during this run; they did not fail and their
+cleanup paths were not changed in this increment. Independent review remains
+pending, including the shared Store API addition and its point-in-time limits.
+
 Registration follow-up: draft Lean candidates now submit immutable canonical
 specifications to the existing Store. Four tests cover idempotency, unchanged
 Store state on refusal, source/limit identity changes, file-order normalization,
