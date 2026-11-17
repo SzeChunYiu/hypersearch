@@ -1,5 +1,21 @@
 # Status — 2026-11-14
 
+## Lean source snapshot preparation — 2026-11-17
+
+Experimental source-only validation toward #2/#3 and #24's selected-candidate
+boundary: closed byte-bound artifacts, deterministic snapshot identity,
+bounded UTF-8 source, duplicate/case/prefix path refusal. No source executes,
+no receipt or verifier is registered, and no existing route or release schema
+is changed. See [draft input contract](LEAN_SNAPSHOT.md).
+
+Author checks on Python 3.12.14: all 182 tests passed in 44.994 seconds (six new
+snapshot tests), tracked-material governance passed, and the fresh README demo
+returned its known C2^3 lower-bound witness with seven subsets checked. The first
+new test invocation had a syntax error in the test file; it was corrected before
+the successful targeted and full runs. No scientific study ran. Independent
+review, PR publication and consumer adoption remain pending. Source identity
+alone is neither dependency completeness nor formal proof acceptance.
+
 ## Observed implementation
 
 - Foundation commit f7254533a9310060bde7f045e7ba89b12d520073: 18 tests and demo passed in GitHub Actions on Python 3.11/3.12/3.13.
