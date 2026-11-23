@@ -380,6 +380,21 @@ def verify_entry(
             "system_sha256": computed_sha,
             "entry_sha256": entry_sha,
         }
+    g_gcd = gcd(g_mod, modulus)
+    if g_gcd != 1:
+        return {
+            "entry_id": entry["entry_id"],
+            "mode": "odd_modular",
+            "modulus": modulus,
+            "modulus_is_prime": mod_prime,
+            "verified": False,
+            "reason": "non_unit_modular_rhs_dot_product",
+            "g": g,
+            "g_mod": g_mod,
+            "gcd_g_modulus": g_gcd,
+            "system_sha256": computed_sha,
+            "entry_sha256": entry_sha,
+        }
     return {
         "entry_id": entry["entry_id"],
         "mode": "odd_modular",
@@ -388,7 +403,7 @@ def verify_entry(
         "verified": True,
         "g": g,
         "g_mod": g_mod,
-        "gcd_g_modulus": gcd(g_mod, modulus),
+        "gcd_g_modulus": g_gcd,
         "system_sha256": computed_sha,
         "entry_sha256": entry_sha,
     }

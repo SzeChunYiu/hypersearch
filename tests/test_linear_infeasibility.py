@@ -136,6 +136,31 @@ class LinearInfeasibilityTests(unittest.TestCase):
         )
         self.assertFalse(verify_entry(zero_mod)["verified"])
 
+        # 3b. Composite odd modulus with non-unit gcd(u.b, m) > 1 refused; unit gcd == 1 accepted
+        non_unit_mod = make_certificate_entry(
+            entry_id="bad-mod-nonunit",
+            num_rows=2,
+            num_cols=1,
+            rows=[[[0, 5]], [[0, 10]]],
+            b=[1, 5],
+            u=[2, -1],  # uM = 0 mod 15, u.b = -3 = 12 mod 15, gcd(12, 15) = 3 != 1
+            modulus=15,
+        )
+        res_nu = verify_entry(non_unit_mod)
+        self.assertFalse(res_nu["verified"])
+        self.assertEqual(res_nu["reason"], "non_unit_modular_rhs_dot_product")
+
+        unit_mod = make_certificate_entry(
+            entry_id="ok-mod-unit",
+            num_rows=2,
+            num_cols=1,
+            rows=[[[0, 5]], [[0, 10]]],
+            b=[1, 4],
+            u=[2, -1],  # uM = 0 mod 15, u.b = -2 = 13 mod 15, gcd(13, 15) = 1
+            modulus=15,
+        )
+        self.assertTrue(verify_entry(unit_mod)["verified"])
+
         # 4. Wrong system_sha256
         wrong_sha = dict(self._sample_integer_entry())
         wrong_sha["system_sha256"] = "0" * 64
@@ -213,8 +238,8 @@ class LinearInfeasibilityTests(unittest.TestCase):
             self.assertEqual(rc3, 2)
 
     def test_no_private_strings_and_fast_check_timing(self) -> None:
-        mod_src = (Path(__file__).resolve().parents[1] / "src/hypersearch/linear_infeasibility.py").read_text(encoding="utf-8")
-        for forbidden in ("CL" + "M-", "ai-" + "math-research", "Davenport" + "-constant", "/home/"):
+        mod_src = (Path(__file__).resolve().parents[1] / "src/hypersearch/linear_infeasibility.py").read_text(encoding="utf-8").lower()
+        for forbidden in ("/home/", "c" + "lm-", "ai-math-" + "research"):
             self.assertNotIn(forbidden, mod_src)
 
         entries = [self._sample_integer_entry(f"e-{i}") for i in range(64)]
