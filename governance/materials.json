@@ -278,6 +278,12 @@
       "lifecycle": "experimental"
     },
     {
+      "path": "src/hypersearch/linear_infeasibility.py",
+      "owner": "core-maintainers",
+      "role": "code",
+      "lifecycle": "experimental"
+    },
+    {
       "path": "src/hypersearch/math_adapter.py",
       "owner": "core-maintainers",
       "role": "code",
@@ -462,6 +468,12 @@
       "owner": "quality-maintainers",
       "role": "test",
       "lifecycle": "active"
+    },
+    {
+      "path": "tests/test_linear_infeasibility.py",
+      "owner": "quality-maintainers",
+      "role": "test",
+      "lifecycle": "experimental"
     },
     {
       "path": "tests/test_math_adapter.py",
