@@ -17,7 +17,7 @@ ROUTES = {"study": study_route, "census": census_route, "program": program_route
 EXPECTED_SCHEMA = "hypersearch.expected-outcomes/v1"
 REFUSED = (ValueError, TypeError, KeyError, RecursionError)
 # Read here only: their receipt validators equal this release's but for the version. Review at every release.
-EARLIER = frozenset({"0.7.0", "0.7.1", "0.8.0"})
+EARLIER = frozenset({"0.7.0", "0.7.1", "0.8.0", "0.9.0"})
 
 
 def problem(kind, subject):

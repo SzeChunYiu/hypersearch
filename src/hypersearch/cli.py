@@ -81,6 +81,11 @@ def main(argv=None):
     check.add_argument("--route", required=True, choices=("study", "census", "program"))
     check.add_argument("--export", required=True, action="append", help="a receipt directory; repeat for several")
     check.add_argument("--expected", help="a consumer's hypersearch.expected-outcomes/v1 file")
+    check_certs = sub.add_parser("check-certificates", help="read-only check of linear infeasibility certificate files")
+    check_certs.add_argument("certificate", help="path to hypersearch.linear-infeasibility-certificate/v1 JSON")
+    check_certs.add_argument("--expected-sha256", help="expected canonical bundle sha256")
+    check_certs.add_argument("--expected-systems", help="optional JSON mapping entry_id -> expected system_sha256")
+    check_certs.add_argument("--allow-noncanonical", action="store_true", help="allow non-canonical JSON whitespace")
     from .review_cli import arguments as review_arguments
     review_arguments(sub)
     args = parser.parse_args(argv)
@@ -108,6 +113,23 @@ def main(argv=None):
         if args.command == "check-export":
             from .export_check import main as check_main
             return check_main(args)
+        if args.command == "check-certificates":
+            from .linear_infeasibility import check_certificate_file
+            from .study_json import parse as parse_strict
+            expected_systems = None
+            if args.expected_systems:
+                sys_path = Path(args.expected_systems)
+                if sys_path.is_symlink() or not sys_path.is_file():
+                    raise ValueError("expected-systems path must be a regular file")
+                expected_systems = parse_strict(sys_path.read_bytes())
+            receipt = check_certificate_file(
+                args.certificate,
+                require_canonical=not args.allow_noncanonical,
+                expected_bundle_sha256=args.expected_sha256,
+                expected_system_sha256s=expected_systems,
+            )
+            print(json.dumps(receipt, indent=2))
+            return 0 if receipt["verified"] else 1
         if args.command in ("verify", "verify-multiwise"):
             path = Path(args.certificate)
             if path.stat().st_size > 65536:

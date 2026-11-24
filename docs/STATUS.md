@@ -191,5 +191,12 @@ studies keep their pins. No research executed.
   certification.
 - Stopping a launch and `abandon-attempt` (0.9.0 development): see the
   status section of [STOPPING.md](STOPPING.md). Author checks only.
+- Linear infeasibility certificates (`hypersearch.linear-infeasibility/v1`,
+  Issue #26): read-only exact integer & odd-modular left-kernel Farkas
+  certificate checker (`check-certificates`), deterministic 13-base Miller-Rabin
+  primality test + bounded Pollard-Brent factorization, canonical JSON & system
+  digest verification. Author checks on Python 3.12.14: 182/182 `-B` tests
+  (176 existing + 6 new) and governance gate pass on synthetic fixtures;
+  independent review and consumer pin adoption remain separate gates.
 
 None of these executes research here, promotes a claim or lifts a consumer hold.
